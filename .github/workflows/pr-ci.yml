@@ -1,0 +1,137 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+# Cancela runs anteriores do mesmo PR para economizar minutos de Actions
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Workflow nao privilegiado: apenas leitura de conteudo
+# Nunca adicione secrets ou write permissions aqui.
+permissions:
+  contents: read
+
+jobs:
+  # -----------------------------------------------------------------------
+  # Job 1: Quality gates — lint, sintaxe, tipos, testes
+  # -----------------------------------------------------------------------
+  quality-gates:
+    name: Quality Gates
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # persist-credentials: false impede que o token persista no git config
+          persist-credentials: false
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Poetry
+        run: pip install poetry==2.1.3
+
+      - name: Install backend dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Lint (ruff)
+        run: poetry run ruff check .
+
+      - name: Syntax check
+        run: poetry run python -m compileall src tests
+
+      - name: Type check (mypy)
+        run: poetry run mypy src
+
+      - name: Tests
+        run: |
+          mkdir -p reports
+          poetry run pytest -q --maxfail=1 \
+            --disable-warnings \
+            --junitxml=reports/pytest.xml
+
+      - name: Upload pytest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: reports/pytest.xml
+          retention-days: 14
+
+  # -----------------------------------------------------------------------
+  # Job 2: Docs gates — freshness, OpenAPI export, Docusaurus build
+  # -----------------------------------------------------------------------
+  docs-gates:
+    name: Docs Gates
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 necessario para showLastUpdateTime no Docusaurus
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: docs-site/pnpm-lock.yaml
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install Poetry
+        run: pip install poetry==2.1.3
+
+      - name: Install backend dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Install docs dependencies
+        run: pnpm --dir docs-site install --frozen-lockfile
+
+      - name: Validate docs freshness policy
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: poetry run python .github/scripts/docs_guardrails.py
+
+      - name: Export OpenAPI schema
+        # Ignora erro se nao houver app FastAPI configurada ainda (modo bootstrap)
+        run: poetry run python scripts/export_openapi.py || echo "AVISO: export_openapi.py nao configurado — pulando"
+
+      - name: Generate API reference docs
+        run: pnpm --dir docs-site docusaurus gen-api-docs all
+
+      - name: Build docs site
+        run: pnpm --dir docs-site build
+
+      - name: Upload docs preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: docs-site/build
+          retention-days: 7

@@ -1,0 +1,86 @@
+name: Docs Deploy
+
+# Publica o portal Docusaurus no GitHub Pages a cada merge em main.
+# Tempo alvo: < 5 minutos do merge ate publicacao.
+on:
+  push:
+    branches:
+      - main
+
+# Permissoes necessarias para GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Garante apenas um deploy em andamento por vez
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 necessario para showLastUpdateTime e showLastUpdateAuthor
+          fetch-depth: 0
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: docs-site/pnpm-lock.yaml
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install Poetry
+        run: pip install poetry==2.1.3
+
+      - name: Install backend dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Install docs dependencies
+        run: pnpm --dir docs-site install --frozen-lockfile
+
+      - name: Export OpenAPI schema
+        run: poetry run python scripts/export_openapi.py
+
+      - name: Generate API reference docs
+        run: pnpm --dir docs-site docusaurus gen-api-docs all
+
+      - name: Build portal
+        run: pnpm --dir docs-site build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

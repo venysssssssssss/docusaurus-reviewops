@@ -1,0 +1,45 @@
+/**
+ * Estilos customizados do portal de documentacao.
+ * Extende o tema classic do Docusaurus.
+ * Substitua as cores pelas cores da sua marca.
+ */
+
+/* Cores primarias — TODO: substitua pela paleta da sua marca */
+:root {
+  --ifm-color-primary: #2e86ab;
+  --ifm-color-primary-dark: #287697;
+  --ifm-color-primary-darker: #25708e;
+  --ifm-color-primary-darkest: #1e5c76;
+  --ifm-color-primary-light: #3496bf;
+  --ifm-color-primary-lighter: #379cc8;
+  --ifm-color-primary-lightest: #47aad2;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* Modo escuro */
+[data-theme="dark"] {
+  --ifm-color-primary: #47aad2;
+  --ifm-color-primary-dark: #31a0cc;
+  --ifm-color-primary-darker: #2b9ac5;
+  --ifm-color-primary-darkest: #2381a3;
+  --ifm-color-primary-light: #5db4d8;
+  --ifm-color-primary-lighter: #69b9db;
+  --ifm-color-primary-lightest: #8bcae3;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Navbar */
+.navbar__brand {
+  font-weight: 700;
+}
+
+/* Badges de versao no sidebar */
+.badge--secondary {
+  font-size: 0.75rem;
+}
+
+/* API reference — melhora legibilidade das rotas */
+.openapi-method-badge {
+  font-weight: 600;
+}

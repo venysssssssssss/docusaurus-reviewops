@@ -1,0 +1,31 @@
+# Labels operacionais do docusaurus-reviewops
+# Para criar via GitHub CLI: gh label create <nome> --color <hex> --description "<desc>"
+# Ou use: gh label import .github/labels.yml (requer gh >= 2.x)
+
+- name: security
+  color: "d73a4a"
+  description: "Toca codigo de seguranca — revisao humana obrigatoria"
+
+- name: breaking-change
+  color: "e4e669"
+  description: "Mudanca incompativel com versao anterior — revisao humana obrigatoria"
+
+- name: needs-human-review
+  color: "0075ca"
+  description: "Marcado para revisao humana explicita — bot nao aprova"
+
+- name: db-migration
+  color: "7057ff"
+  description: "Inclui migracao de banco de dados — revisao obrigatoria"
+
+- name: infra-change
+  color: "e99695"
+  description: "Toca infraestrutura (terraform, helm, docker) — revisao obrigatoria"
+
+- name: auto-approved
+  color: "0e8a16"
+  description: "Aprovado automaticamente pelo bot apos todos os gates passarem"
+
+- name: docs-only
+  color: "cfd3d7"
+  description: "Apenas mudancas de documentacao"

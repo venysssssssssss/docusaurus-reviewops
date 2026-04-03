@@ -1,0 +1,68 @@
+name: Pull Request Approval Bot
+
+# SEGURANCA: Este workflow e disparado por workflow_run (nao pull_request).
+# Isso permite acesso a secrets e write tokens mesmo para PRs de forks,
+# pois ele NAO executa codigo do PR — apenas consome metadados via API REST.
+# Ref: GitHub Docs — Secure use reference [R12][R13]
+on:
+  workflow_run:
+    workflows:
+      - "Pull Request CI"
+    types:
+      - completed
+
+# Permissoes minimas necessarias:
+# - contents: read — para acessar o codigo do workflow
+# - pull-requests: write — para registrar o review de aprovacao
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  approve:
+    name: Evaluate and Approve
+    # Executa apenas se o PR CI completou com sucesso
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # CRITICO: Nunca fazer checkout do codigo do PR aqui.
+      # Este workflow opera apenas com metadados do evento e chamadas a API REST.
+      # O checkout abaixo e do branch default (main) — nao do PR.
+      - name: Checkout default branch (scripts only)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Resolve PR number from workflow_run event
+        id: pr
+        run: |
+          python - <<'PY'
+          import json, os
+          data = json.load(open(os.environ['GITHUB_EVENT_PATH']))
+          prs = data.get('workflow_run', {}).get('pull_requests', [])
+          pr_number = prs[0]['number'] if prs else ''
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f'pr_number={pr_number}\n')
+          PY
+
+      - name: Stop if workflow_run has no associated PR
+        if: steps.pr.outputs.pr_number == ''
+        run: |
+          echo "Nenhum pull request associado a este workflow_run. Encerrando."
+          exit 0
+
+      - name: Execute approval policy
+        if: steps.pr.outputs.pr_number != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: python .github/scripts/approval_policy.py

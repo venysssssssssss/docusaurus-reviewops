@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+.mypy_cache/
+.ruff_cache/
+reports/
+
+# Node / Docusaurus
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+docs-site/versioned_docs/
+docs-site/versioned_sidebars/
+docs-site/versions.json
+
+# IDE
+.vscode/
+.idea/
+
+# Env
+.env
+.env.*

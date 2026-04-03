@@ -26,7 +26,7 @@ sidebar_label: Overview
 
 ## Decisoes arquiteturais
 
-Veja os [ADRs](/adr) para o historico de decisoes arquiteturais com contexto e rationale.
+Veja os [ADRs](/adr/001-docusaurus-reviewops) para o historico de decisoes arquiteturais com contexto e rationale.
 
 ## Dependencias externas
 

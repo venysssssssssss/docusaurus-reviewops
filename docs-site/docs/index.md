@@ -16,8 +16,8 @@ Bem-vindo ao portal de documentacao tecnica. Esta e a fonte de verdade para arqu
 | [Architecture](/architecture/overview) | Visao geral da arquitetura do sistema |
 | [Standards](/standards/coding-standards) | Padroes de codigo e engenharia |
 | [Runbooks](/runbooks/deploy) | Procedimentos operacionais |
-| [ADR](/adr) | Registros de decisao arquitetural |
-| [API Reference](/api/core) | Referencia completa da API |
+| [ADR](/adr/001-docusaurus-reviewops) | Registros de decisao arquitetural |
+| [API Reference](/api/core/api) | Referencia completa da API |
 
 ## Principios editoriais
 

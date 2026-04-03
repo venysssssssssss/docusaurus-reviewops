@@ -24,7 +24,14 @@ const config: Config = {
   projectName: "engineering-docs",
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "throw",
+  // onBrokenMarkdownLinks migrado para markdown.hooks em Docusaurus v4
+  // Mantido aqui para compatibilidade com v3.x
+  onBrokenMarkdownLinks: "warn",
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: "throw",
+    },
+  },
 
   i18n: {
     defaultLocale: "pt-BR",
@@ -45,15 +52,14 @@ const config: Config = {
           editUrl: "https://github.com/example/repo/tree/main/docs-site/",
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
-          // Versioning: "current" e o branch em desenvolvimento
-          lastVersion: "current",
-          versions: {
-            current: {
-              label: "Next",
-              path: "next",
-              banner: "unreleased",
-            },
-          },
+          // Versionamento sera configurado apos o primeiro docs:version.
+          // O workflow docs-version-pr.yml cria automaticamente versioned_docs/
+          // e versions.json quando uma tag e publicada.
+          // Descomente o bloco abaixo apos a primeira release:
+          // lastVersion: "current",
+          // versions: {
+          //   current: { label: "Next", path: "next", banner: "unreleased" },
+          // },
         },
         blog: false,
         theme: {
@@ -64,6 +70,8 @@ const config: Config = {
   ],
 
   plugins: [
+    // Plugin local: resolve fallback de modulos Node para postman-code-generators
+    require.resolve("./src/webpack-fallback-plugin.js"),
     [
       "docusaurus-plugin-openapi-docs",
       {
@@ -105,6 +113,7 @@ const config: Config = {
           position: "left",
         },
         { to: "/runbooks/deploy", label: "Runbooks", position: "left" },
+        { to: "/api/core/api", label: "API", position: "left" },
         // Dropdown de versoes — aparece apos o primeiro freeze de versao
         { type: "docsVersionDropdown", position: "right" },
         {
@@ -124,7 +133,7 @@ const config: Config = {
             { label: "Architecture", to: "/architecture/overview" },
             { label: "Standards", to: "/standards/coding-standards" },
             { label: "Runbooks", to: "/runbooks/deploy" },
-            { label: "API", to: "/api/core" },
+            { label: "API", to: "/api/core/api" },
           ],
         },
       ],

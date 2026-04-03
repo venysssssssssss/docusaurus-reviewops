@@ -1,0 +1,8 @@
+{
+  "label": "ADR",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Registros de Decisao Arquitetural — historico de decisoes tecnicas com contexto e rationale."
+  }
+}

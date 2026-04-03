@@ -1,23 +1,25 @@
 # Python
 .venv/
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.egg-info/
 dist/
 .mypy_cache/
+.pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 reports/
 
 # Node / Docusaurus
 docs-site/node_modules/
-docs-site/build/
 docs-site/.docusaurus/
+docs-site/build/
+docs-site/openapi/openapi.json
+docs-site/docs/api/
 docs-site/versioned_docs/
 docs-site/versioned_sidebars/
 docs-site/versions.json
-# API docs geradas automaticamente pelo gen-api-docs
-docs-site/docs/api/
 
 # IDE
 .vscode/
@@ -26,4 +28,3 @@ docs-site/docs/api/
 # Env
 .env
 .env.*
-.docusaurus/

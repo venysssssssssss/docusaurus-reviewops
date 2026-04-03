@@ -6,74 +6,70 @@ sidebar_label: Deploy
 
 # Deploy Runbook
 
-<!-- TODO: Substitua pelos procedimentos reais do seu sistema -->
+## Deploy automatico (padrao)
 
-## Pre-requisitos
-
-- [ ] Acesso ao ambiente de producao
-- [ ] Branch `main` com todos os testes passando
-- [ ] Aprovacao do time relevante (se aplicavel)
-
-## Deploy normal (via CI)
-
-O deploy em producao e automatizado via GitHub Actions. Todo merge em `main` dispara o pipeline:
+Todo merge em `main` dispara deploy automaticamente:
 
 ```
 merge em main
-  └─> pr-ci.yml passou (quality-gates + docs-gates)
-  └─> docs-deploy.yml publica portal Docusaurus
-  └─> seu pipeline de deploy da aplicacao (configure aqui)
+  └─> docs-deploy.yml
+       └─> export OpenAPI
+       └─> gera API reference
+       └─> build Docusaurus
+       └─> publica GitHub Pages
 ```
+
+**Tempo medio:** < 5 minutos do merge ate publicacao.
 
 ### Verificacao pos-deploy
 
-1. Verifique o status do workflow em Actions
-2. Valide a URL de producao
-3. Execute smoke tests se disponivel
+1. Acesse a URL do portal
+2. Verifique se as paginas modificadas estao atualizadas
+3. Confirme que "Last updated" reflete o merge recente
+
+## Release e congelamento de docs
+
+Para congelar a documentacao junto com uma release:
+
+```bash
+# 1. Crie e publique a tag
+git tag v1.2.0
+git push origin v1.2.0
+
+# 2. O workflow cria automaticamente:
+#    - Branch: automation/docs-version-1.2.0
+#    - PR: "docs: freeze version 1.2.0"
+
+# 3. Revise e faca merge do PR
+```
+
+Apos o primeiro freeze, descomente o bloco de versionamento em `docusaurus.config.ts`.
 
 ## Rollback
 
-### Rollback via revert de commit
+### Via revert (preferido)
 
 ```bash
 git revert <sha-do-commit-problematico>
 git push origin main
+# CI faz deploy automaticamente da versao revertida
 ```
 
-O CI automaticamente fara o deploy da versao revertida.
+### Via tag anterior
 
-### Rollback manual de emergencia
-
-<!-- TODO: Documente o procedimento de rollback especifico do seu sistema -->
-
-## Releases e versionamento
-
-Para congelar uma versao documental junto com uma release:
+Se o portal esta com problemas graves, re-publique a versao anterior:
 
 ```bash
-# Cria a tag — o workflow docs-version-pr.yml dispara automaticamente
-git tag v1.2.0
-git push origin v1.2.0
+git checkout v1.1.0
+pnpm --dir docs-site install && pnpm --dir docs-site build
+# Upload manual via GitHub Pages ou re-deploy
 ```
 
-O workflow abre um PR automatico com o freeze da documentacao. Revise e faca o merge.
+## Troubleshooting
 
-## Monitoramento
-
-<!-- TODO: Links para dashboards de monitoramento -->
-
-| Metrica | Ferramenta | Link |
+| Problema | Causa provavel | Solucao |
 |---|---|---|
-| Latencia | <!-- ferramenta --> | <!-- link --> |
-| Taxa de erro | <!-- ferramenta --> | <!-- link --> |
-| Disponibilidade | <!-- ferramenta --> | <!-- link --> |
-
-## Contatos de emergencia
-
-<!-- TODO: Substitua pelos contatos reais -->
-
-| Papel | Contato |
-|---|---|
-| On-call engineer | @on-call-channel |
-| Tech lead | @tech-lead |
-| Platform engineering | @platform-engineering |
+| Build falha no CI | Link quebrado ou erro de sintaxe | Verifique o log do job `docs-gates` |
+| Portal nao atualiza | Deploy esta enfileirado | Verifique Actions > Docs Deploy |
+| API reference vazia | `export_openapi.py` nao configurado | Aponte para sua app FastAPI |
+| Versao nao aparece | Dropdown desativado | Descomente bloco em `docusaurus.config.ts` |

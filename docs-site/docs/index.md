@@ -7,29 +7,37 @@ slug: /
 
 # Engineering Docs
 
-Bem-vindo ao portal de documentacao tecnica. Esta e a fonte de verdade para arquitetura, padroes de engenharia, runbooks operacionais e referencia de API.
+Portal de documentacao tecnica. Fonte de verdade para arquitetura, padroes, runbooks e API.
 
-## Navegacao rapida
+## Navegacao
 
-| Secao | Descricao |
+| Secao | O que voce encontra |
 |---|---|
-| [Architecture](/architecture/overview) | Visao geral da arquitetura do sistema |
-| [Standards](/standards/coding-standards) | Padroes de codigo e engenharia |
-| [Runbooks](/runbooks/deploy) | Procedimentos operacionais |
-| [ADR](/adr/001-docusaurus-reviewops) | Registros de decisao arquitetural |
-| [API Reference](/api/core/api) | Referencia completa da API |
+| [Architecture](/architecture/overview) | Visao geral do sistema e decisoes de design |
+| [Standards](/standards/coding-standards) | Convencoes de codigo, PRs e commits |
+| [Runbooks](/runbooks/deploy) | Procedimentos operacionais passo-a-passo |
+| [ADR](/adr/001-docusaurus-reviewops) | Historico de decisoes arquiteturais |
+| [API Reference](/api/core/api) | Referencia gerada automaticamente do OpenAPI |
 
-## Principios editoriais
+## Como este portal funciona
 
-- **Docs como codigo**: toda mudanca publica exige atualizacao documental no mesmo PR
-- **Fonte de verdade unica**: API reference gerada automaticamente do schema OpenAPI
-- **Versionamento explicito**: versoes congeladas em releases major e minor
-- **Auditabilidade**: `showLastUpdateTime` e `showLastUpdateAuthor` ativados em todas as paginas
+Este portal e **gerado automaticamente** a cada merge em `main`:
+
+1. O CI valida que toda mudanca publica inclui documentacao
+2. O schema OpenAPI e exportado e a referencia de API e gerada
+3. O Docusaurus builda o site estatico
+4. O GitHub Pages publica automaticamente
+
+### Versionamento
+
+Em cada release (tag `v*.*.*`), a documentacao atual e congelada como snapshot.
+Versoes anteriores ficam acessiveis pelo dropdown no canto superior direito.
 
 ## Como contribuir
 
-1. Abra um PR com a mudanca de codigo **e** a documentacao correspondente
-2. O CI valida que docs foram tocadas junto com codigo publico
-3. Apos merge, o portal e publicado automaticamente
+1. Abra um PR com codigo **e** docs no mesmo PR
+2. O guardrail `docs_guardrails.py` verifica que docs foram tocadas
+3. Apos merge, o portal atualiza em < 5 minutos
 
-> Documentacao desatualizada e divida tecnica. Este portal elimina esse debt na origem.
+Documentos seguem o padrao [docs-as-code](https://www.writethedocs.org/guide/docs-as-code/).
+Edite diretamente os arquivos `.md` em `docs-site/docs/`.

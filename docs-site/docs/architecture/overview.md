@@ -6,32 +6,43 @@ sidebar_label: Overview
 
 # Architecture Overview
 
-<!-- TODO: Substitua esta pagina pela visao arquitetural real do seu sistema -->
+Esta pagina descreve a arquitetura do sistema. Substitua o conteudo abaixo pela visao real do seu projeto.
 
-## Visao geral
+## Exemplo de estrutura
 
-<!-- Descreva aqui os principais componentes do sistema e como eles se relacionam -->
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Clientes  │────>│   API (src/) │────>│   Banco de   │
+│             │     │   FastAPI    │     │   dados      │
+└─────────────┘     └──────┬───────┘     └──────────────┘
+                           │
+                    ┌──────v───────┐
+                    │   Workers    │
+                    │   (filas)    │
+                    └──────────────┘
+```
 
-## Componentes principais
+## Componentes
 
-| Componente | Responsabilidade | Tecnologia |
+| Componente | Responsabilidade | Stack |
 |---|---|---|
-| API | <!-- descricao --> | <!-- tech --> |
-| Worker | <!-- descricao --> | <!-- tech --> |
-| Database | <!-- descricao --> | <!-- tech --> |
+| API | Endpoints HTTP, autenticacao, validacao | FastAPI, Pydantic |
+| Workers | Processamento assincrono | Celery / ARQ |
+| Database | Persistencia, queries | PostgreSQL |
+| Portal Docs | Documentacao viva | Docusaurus v3 |
 
 ## Fluxo de dados
 
-<!-- Diagrama ou descricao textual do fluxo principal de dados -->
+1. Cliente envia request para a API
+2. API valida, processa e persiste no banco
+3. Se necessario, enfileira job para worker
+4. Worker processa e atualiza resultado no banco
 
 ## Decisoes arquiteturais
 
-Veja os [ADRs](/adr/001-docusaurus-reviewops) para o historico de decisoes arquiteturais com contexto e rationale.
+Veja os [ADRs](/adr/001-docusaurus-reviewops) para o historico completo de decisoes com contexto e rationale.
 
-## Dependencias externas
+## Como editar esta pagina
 
-<!-- Liste servicos e APIs externas que o sistema consome -->
-
-## SLOs e confiabilidade
-
-<!-- Objetivos de nivel de servico e estrategias de confiabilidade -->
+Esta pagina vive em `docs-site/docs/architecture/overview.md`.
+Abra um PR e o CI validara o build automaticamente.

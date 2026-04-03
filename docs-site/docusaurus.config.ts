@@ -24,14 +24,8 @@ const config: Config = {
   projectName: "engineering-docs",
 
   onBrokenLinks: "throw",
-  // onBrokenMarkdownLinks migrado para markdown.hooks em Docusaurus v4
-  // Mantido aqui para compatibilidade com v3.x
-  onBrokenMarkdownLinks: "warn",
-  markdown: {
-    hooks: {
-      onBrokenMarkdownLinks: "throw",
-    },
-  },
+  // Em Docusaurus v4, migre para: markdown.hooks.onBrokenMarkdownLinks
+  onBrokenMarkdownLinks: "throw",
 
   i18n: {
     defaultLocale: "pt-BR",

@@ -2,52 +2,71 @@
 # setup_reviewops.sh — instala o docusaurus-reviewops em um repositorio existente
 #
 # Uso:
-#   bash scripts/setup_reviewops.sh
-#   bash scripts/setup_reviewops.sh --target /caminho/do/repo
+#   bash scripts/setup_reviewops.sh                       # interativo
+#   bash scripts/setup_reviewops.sh --yes                  # aceita tudo
+#   bash scripts/setup_reviewops.sh --dry-run              # mostra o que faria
+#   bash scripts/setup_reviewops.sh --target /caminho/repo # outro diretorio
 #
-# O script detecta o que ja existe e oferece merge seguro,
-# nunca sobrescrevendo arquivos sem confirmacao.
+# Flags podem ser combinadas:
+#   bash scripts/setup_reviewops.sh --dry-run --target /meu/repo
 
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# Variaveis
+# Flags
 # ---------------------------------------------------------------------------
 
+DRY_RUN=false
+AUTO_YES=false
+TARGET_DIR="$PWD"
 REVIEWOPS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET_DIR="${1:-$PWD}"
-if [[ "${1:-}" == "--target" ]]; then
-  TARGET_DIR="${2}"
-  shift 2
-fi
 
-# Cores para output
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)  DRY_RUN=true; shift ;;
+    --yes|-y)   AUTO_YES=true; shift ;;
+    --target)   TARGET_DIR="$2"; shift 2 ;;
+    -*)         echo "Flag desconhecida: $1"; exit 1 ;;
+    *)          TARGET_DIR="$1"; shift ;;
+  esac
+done
+
+# ---------------------------------------------------------------------------
+# Cores e funcoes utilitarias
+# ---------------------------------------------------------------------------
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# ---------------------------------------------------------------------------
-# Funcoes utilitarias
-# ---------------------------------------------------------------------------
+GRAY='\033[0;90m'
+NC='\033[0m'
 
 info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
-success() { echo -e "${GREEN}[OK]${NC} $*"; }
+success() { echo -e "${GREEN}[ OK ]${NC} $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+error()   { echo -e "${RED}[ERRO]${NC} $*" >&2; }
+dry()     { echo -e "${GRAY}[DRY]${NC}  $*"; }
 
 confirm() {
+  if [[ "$AUTO_YES" == "true" ]]; then return 0; fi
   local prompt="${1:-Continuar?}"
   read -r -p "$prompt [s/N] " response
   [[ "$response" =~ ^[sS]$ ]]
 }
 
-copy_if_missing() {
-  local src="$1"
-  local dst="$2"
+safe_copy() {
+  local src="$1" dst="$2"
+  if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ -f "$dst" ]]; then
+      dry "Pularia (ja existe): $dst"
+    else
+      dry "Copiaria: $dst"
+    fi
+    return
+  fi
   if [[ -f "$dst" ]]; then
-    warn "Arquivo ja existe: $dst (pulando)"
+    warn "Ja existe: $dst (pulando)"
   else
     mkdir -p "$(dirname "$dst")"
     cp "$src" "$dst"
@@ -55,209 +74,200 @@ copy_if_missing() {
   fi
 }
 
-copy_with_confirm() {
-  local src="$1"
-  local dst="$2"
-  if [[ -f "$dst" ]]; then
-    warn "Arquivo ja existe: $dst"
-    if confirm "  Sobrescrever?"; then
-      cp "$src" "$dst"
-      success "Sobrescrito: $dst"
+safe_copy_dir() {
+  local src="$1" dst="$2"
+  if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ -d "$dst" ]]; then
+      dry "Pularia diretorio (ja existe): $dst"
     else
-      info "  Mantendo arquivo existente."
+      dry "Copiaria diretorio: $dst"
     fi
+    return
+  fi
+  if [[ -d "$dst" ]]; then
+    warn "Ja existe: $dst (pulando)"
   else
-    mkdir -p "$(dirname "$dst")"
-    cp "$src" "$dst"
+    cp -r "$src" "$dst"
     success "Copiado: $dst"
   fi
+}
+
+safe_mkdir() {
+  local dir="$1"
+  if [[ "$DRY_RUN" == "true" ]]; then
+    [[ -d "$dir" ]] || dry "Criaria: $dir"
+    return
+  fi
+  mkdir -p "$dir"
+}
+
+safe_touch() {
+  local file="$1"
+  if [[ "$DRY_RUN" == "true" ]]; then
+    [[ -f "$file" ]] || dry "Criaria: $file"
+    return
+  fi
+  [[ -f "$file" ]] || { touch "$file" && success "Criado: $file"; }
 }
 
 # ---------------------------------------------------------------------------
-# Inicio
+# Header
 # ---------------------------------------------------------------------------
 
 echo ""
 echo "======================================================"
 echo "  docusaurus-reviewops — Setup"
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "  MODO DRY-RUN: nenhum arquivo sera alterado"
+fi
 echo "======================================================"
 echo ""
-info "Repositorio origem (reviewops): $REVIEWOPS_DIR"
-info "Repositorio destino:            $TARGET_DIR"
+info "Origem:  $REVIEWOPS_DIR"
+info "Destino: $TARGET_DIR"
 echo ""
 
 if [[ ! -d "$TARGET_DIR/.git" ]]; then
-  error "O diretorio destino nao parece ser um repositorio git: $TARGET_DIR"
+  error "Nao e um repositorio git: $TARGET_DIR"
   exit 1
 fi
 
 cd "$TARGET_DIR"
 
 # ---------------------------------------------------------------------------
-# Passo 1: Verificar pre-requisitos
+# Deteccao do estado atual
 # ---------------------------------------------------------------------------
 
-echo "--- Verificando pre-requisitos ---"
+echo "--- Estado atual do repositorio ---"
 
-HAS_PYPROJECT=false
-HAS_PACKAGE_JSON=false
-HAS_GITHUB_DIR=false
-HAS_DOCS_SITE=false
-
-[[ -f "pyproject.toml" ]] && HAS_PYPROJECT=true && info "pyproject.toml encontrado"
-[[ -f "package.json" ]] && HAS_PACKAGE_JSON=true && info "package.json encontrado"
-[[ -d ".github/workflows" ]] && HAS_GITHUB_DIR=true && info ".github/workflows/ encontrado"
-[[ -d "docs-site" ]] && HAS_DOCS_SITE=true && info "docs-site/ encontrado"
+HAS_PYPROJECT=false; [[ -f "pyproject.toml" ]] && HAS_PYPROJECT=true && info "pyproject.toml encontrado"
+HAS_DOCS_SITE=false; [[ -d "docs-site" ]] && HAS_DOCS_SITE=true && info "docs-site/ encontrado"
+HAS_GITHUB=false;    [[ -d ".github/workflows" ]] && HAS_GITHUB=true && info ".github/workflows/ encontrado"
 
 echo ""
 confirm "Prosseguir com a instalacao?" || exit 0
 
 # ---------------------------------------------------------------------------
-# Passo 2: GitHub workflows
+# 1. Workflows e scripts
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Instalando workflows GitHub Actions ---"
+echo "--- Workflows e scripts ---"
 
-mkdir -p ".github/workflows" ".github/scripts"
+safe_mkdir ".github/workflows"
+safe_mkdir ".github/scripts"
 
-copy_if_missing "$REVIEWOPS_DIR/.github/workflows/pr-ci.yml" ".github/workflows/pr-ci.yml"
-copy_if_missing "$REVIEWOPS_DIR/.github/workflows/pr-approval.yml" ".github/workflows/pr-approval.yml"
-copy_if_missing "$REVIEWOPS_DIR/.github/workflows/docs-deploy.yml" ".github/workflows/docs-deploy.yml"
-copy_if_missing "$REVIEWOPS_DIR/.github/workflows/docs-version-pr.yml" ".github/workflows/docs-version-pr.yml"
-
-copy_if_missing "$REVIEWOPS_DIR/.github/scripts/approval_policy.py" ".github/scripts/approval_policy.py"
-copy_if_missing "$REVIEWOPS_DIR/.github/scripts/docs_guardrails.py" ".github/scripts/docs_guardrails.py"
-
-# ---------------------------------------------------------------------------
-# Passo 3: CODEOWNERS
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "--- Configurando CODEOWNERS ---"
-
-if [[ -f ".github/CODEOWNERS" ]]; then
-  warn "CODEOWNERS ja existe."
-  info "Verifique manualmente se as areas criticas estao mapeadas:"
-  info "  .github/, infra/, terraform/, migrations/, alembic/"
-  confirm "  Adicionar bloco do reviewops ao CODEOWNERS existente?" && {
-    echo "" >> ".github/CODEOWNERS"
-    echo "# Adicionado pelo docusaurus-reviewops" >> ".github/CODEOWNERS"
-    grep -E "^/docs-site/" "$REVIEWOPS_DIR/.github/CODEOWNERS" >> ".github/CODEOWNERS" || true
-    success "Bloco de docs-site adicionado ao CODEOWNERS existente"
-  }
-else
-  copy_if_missing "$REVIEWOPS_DIR/.github/CODEOWNERS" ".github/CODEOWNERS"
-  warn "IMPORTANTE: Edite .github/CODEOWNERS e substitua @org/team pelos handles reais"
-fi
+safe_copy "$REVIEWOPS_DIR/.github/workflows/pr-ci.yml"           ".github/workflows/pr-ci.yml"
+safe_copy "$REVIEWOPS_DIR/.github/workflows/pr-approval.yml"     ".github/workflows/pr-approval.yml"
+safe_copy "$REVIEWOPS_DIR/.github/workflows/docs-deploy.yml"     ".github/workflows/docs-deploy.yml"
+safe_copy "$REVIEWOPS_DIR/.github/workflows/docs-version-pr.yml" ".github/workflows/docs-version-pr.yml"
+safe_copy "$REVIEWOPS_DIR/.github/scripts/approval_policy.py"    ".github/scripts/approval_policy.py"
+safe_copy "$REVIEWOPS_DIR/.github/scripts/docs_guardrails.py"    ".github/scripts/docs_guardrails.py"
 
 # ---------------------------------------------------------------------------
-# Passo 4: Labels
+# 2. CODEOWNERS e labels
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Labels operacionais ---"
+echo "--- CODEOWNERS e labels ---"
 
-copy_if_missing "$REVIEWOPS_DIR/.github/labels.yml" ".github/labels.yml"
+safe_copy "$REVIEWOPS_DIR/.github/CODEOWNERS" ".github/CODEOWNERS"
+safe_copy "$REVIEWOPS_DIR/.github/labels.yml" ".github/labels.yml"
 
-if command -v gh &>/dev/null; then
-  if confirm "  Criar labels via GitHub CLI (gh label import)?"; then
-    gh label import .github/labels.yml && success "Labels criados via gh CLI"
+if [[ "$DRY_RUN" == "false" ]] && [[ -f ".github/CODEOWNERS" ]]; then
+  if grep -q "@org/" ".github/CODEOWNERS"; then
+    warn "CODEOWNERS contem @org/team — substitua pelos handles reais"
   fi
-else
-  info "GitHub CLI (gh) nao encontrado."
-  info "Para criar os labels: gh label import .github/labels.yml"
+fi
+
+if [[ "$DRY_RUN" == "false" ]] && command -v gh &>/dev/null; then
+  if confirm "Criar labels via GitHub CLI?"; then
+    gh label import .github/labels.yml 2>/dev/null && success "Labels criados" || warn "Falha ao criar labels (verifique autenticacao do gh)"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
-# Passo 5: pyproject.toml
+# 3. Python config
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Dependencias Python ---"
+echo "--- Configuracao Python ---"
 
 if [[ "$HAS_PYPROJECT" == "true" ]]; then
-  warn "pyproject.toml ja existe — nao sera sobrescrito."
-  info "Adicione manualmente as dependencias de dev:"
-  info "  ruff, pytest, mypy, pytest-mock"
+  warn "pyproject.toml ja existe — nao sera sobrescrito"
+  info "Adicione as deps de dev manualmente: ruff, pytest, mypy, pytest-mock"
 else
-  copy_if_missing "$REVIEWOPS_DIR/pyproject.toml" "pyproject.toml"
+  safe_copy "$REVIEWOPS_DIR/pyproject.toml" "pyproject.toml"
 fi
 
 # ---------------------------------------------------------------------------
-# Passo 6: Portal Docusaurus
+# 4. Portal Docusaurus
 # ---------------------------------------------------------------------------
 
 echo ""
 echo "--- Portal Docusaurus ---"
 
 if [[ "$HAS_DOCS_SITE" == "true" ]]; then
-  warn "docs-site/ ja existe — nao sera sobrescrito."
-  info "Verifique manualmente se as dependencias do plugin OpenAPI estao configuradas:"
-  info "  docusaurus-plugin-openapi-docs, docusaurus-theme-openapi-docs"
+  warn "docs-site/ ja existe — nao sera sobrescrito"
+  info "Verifique se docusaurus-plugin-openapi-docs esta configurado"
 else
-  info "Copiando docs-site/..."
-  cp -r "$REVIEWOPS_DIR/docs-site" "./"
-  success "docs-site/ copiado"
-  warn "IMPORTANTE: Edite docs-site/docusaurus.config.ts e substitua os placeholders"
+  safe_copy_dir "$REVIEWOPS_DIR/docs-site" "./docs-site"
+  if [[ "$DRY_RUN" == "false" ]]; then
+    warn "Edite docs-site/docusaurus.config.ts e substitua os placeholders"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
-# Passo 7: Script export_openapi.py
+# 5. Scripts auxiliares
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Script de export OpenAPI ---"
+echo "--- Scripts auxiliares ---"
 
-mkdir -p scripts
-copy_if_missing "$REVIEWOPS_DIR/scripts/export_openapi.py" "scripts/export_openapi.py"
-
-if [[ ! -f "scripts/export_openapi.py" ]]; then
-  warn "Edite scripts/export_openapi.py e aponte para o modulo da sua app FastAPI"
-fi
+safe_mkdir "scripts"
+safe_copy "$REVIEWOPS_DIR/scripts/export_openapi.py"   "scripts/export_openapi.py"
+safe_copy "$REVIEWOPS_DIR/scripts/validate_config.py"   "scripts/validate_config.py"
 
 # ---------------------------------------------------------------------------
-# Passo 8: Estrutura minima
+# 6. Estrutura minima
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Estrutura minima de diretorios ---"
+echo "--- Estrutura minima ---"
 
-mkdir -p src tests
-[[ -f "src/__init__.py" ]] || touch "src/__init__.py" && success "src/__init__.py criado"
-[[ -f "tests/__init__.py" ]] || touch "tests/__init__.py" && success "tests/__init__.py criado"
+safe_mkdir "src"
+safe_mkdir "tests"
+safe_touch "src/__init__.py"
+safe_touch "tests/__init__.py"
 
 # ---------------------------------------------------------------------------
-# Resumo final
+# 7. Makefile
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "--- Makefile ---"
+safe_copy "$REVIEWOPS_DIR/Makefile" "Makefile"
+
+# ---------------------------------------------------------------------------
+# Resumo
 # ---------------------------------------------------------------------------
 
 echo ""
 echo "======================================================"
-echo "  Setup concluido!"
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "  Dry-run concluido. Nenhum arquivo foi alterado."
+  echo "  Remova --dry-run para executar de verdade."
+else
+  echo "  Setup concluido!"
+  echo ""
+  echo "  Proximos passos:"
+  echo ""
+  echo "    1. Edite .github/CODEOWNERS — substitua @org/team"
+  echo "    2. Edite docs-site/docusaurus.config.ts — substitua placeholders"
+  echo "    3. Edite scripts/export_openapi.py — aponte para sua app"
+  echo "    4. Rode: make setup"
+  echo "    5. Rode: make validate"
+  echo "    6. Configure branch protection em main"
+  echo "    7. Habilite GitHub Actions para aprovar PRs"
+fi
 echo "======================================================"
-echo ""
-echo "Proximos passos obrigatorios:"
-echo ""
-echo "  1. Edite .github/CODEOWNERS"
-echo "     Substitua @org/team pelos handles reais da sua org"
-echo ""
-echo "  2. Edite docs-site/docusaurus.config.ts"
-echo "     Substitua: url, baseUrl, organizationName, projectName, editUrl, copyright"
-echo ""
-echo "  3. Configure branch protection em main:"
-echo "     - Required status checks: quality-gates, docs-gates"
-echo "     - Block force pushes"
-echo "     - Require conversation resolution"
-echo ""
-echo "  4. Habilite GitHub Actions para aprovar PRs:"
-echo "     Settings > Actions > General > Allow GitHub Actions to create and approve PRs"
-echo ""
-echo "  5. Edite scripts/export_openapi.py"
-echo "     Aponte para o modulo correto da sua app FastAPI"
-echo ""
-echo "  6. Instale dependencias:"
-echo "     poetry install"
-echo "     pnpm --dir docs-site install"
-echo ""
-echo "Documentacao completa: README.md"
 echo ""

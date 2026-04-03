@@ -1,142 +1,202 @@
 # docusaurus-reviewops
 
-**Agente de revisao e aprovacao automatica de PR + portal Docusaurus versionado**
+Automacao de revisao de PR + portal de documentacao versionado para repositorios GitHub.
 
-Drop-in de governanca para repositorios GitHub. Funciona em projetos novos e em repositorios ja existentes.
-
----
-
-## O que este sistema faz
-
-| Capacidade | Descricao |
-|---|---|
-| **Quality gates** | Lint, sintaxe, tipos, testes e docs validados em todo PR |
-| **Auto-approval** | Bot aprova PRs elegiveis sem relaxar a integridade do repo |
-| **Docs vivas** | Portal Docusaurus publicado automaticamente a cada merge em main |
-| **Versionamento** | Congelamento documental automatico em releases |
-
-### Principio central
+Aplique em qualquer repo — novo ou existente — e tenha:
+- **Quality gates** em todo PR (lint, tipos, testes, docs)
+- **Aprovacao automatica** de PRs de baixo risco
+- **Portal Docusaurus** publicado a cada merge em main
+- **Versionamento** de docs congelado em cada release
 
 > Automacao acelera. Governanca continua no comando.
 
-O bot **nunca** aprova:
-- PRs com labels bloqueantes (`security`, `breaking-change`, `db-migration`, `infra-change`, `needs-human-review`)
-- PRs que tocam caminhos protegidos (`.github/`, `infra/`, `terraform/`, `migrations/`, etc.)
-- PRs draft ou vindos de forks
-- PRs com mais de 30 arquivos ou 800 linhas de delta
-- PRs com review `CHANGES_REQUESTED` pendente
-
 ---
 
-## Inicio rapido — Projeto novo (greenfield)
+## Como funciona
 
-```bash
-# 1. Clone e configure
-git clone <este-repo> meu-projeto
-cd meu-projeto
-
-# 2. Instale dependencias Python
-poetry install
-
-# 3. Instale dependencias do portal
-pnpm --dir docs-site install
-
-# 4. Configure o GitHub (veja secao abaixo)
-# 5. Substitua os placeholders em CODEOWNERS e docusaurus.config.ts
+```
+PR aberto
+ |
+ v
+pr-ci.yml ─────────── Roda lint, testes, mypy, build do portal
+ |                     Permissao: somente leitura (contents: read)
+ v
+pr-approval.yml ───── Se CI passou, avalia politica e aprova
+ |                     Permissao: pull-requests: write
+ |                     NUNCA faz checkout do codigo do PR
+ v
+Merge em main
+ |
+ v
+docs-deploy.yml ───── Publica portal no GitHub Pages (< 5 min)
+ |
+ v
+git tag v1.2.0
+ |
+ v
+docs-version-pr.yml ─ Congela docs da release e abre PR automatico
 ```
 
+### O que o bot nunca aprova
+
+- PRs com labels: `security`, `breaking-change`, `db-migration`, `infra-change`, `needs-human-review`
+- PRs que tocam: `.github/`, `infra/`, `terraform/`, `migrations/`, `Dockerfile`, lockfiles
+- PRs draft, de fork, com `CHANGES_REQUESTED`, > 30 arquivos ou > 800 linhas
+
 ---
 
-## Inserindo em projeto existente (brownfield)
+## Inicio rapido
+
+### Projeto novo
 
 ```bash
-# 1. Copie este repositorio para um diretorio temporario
+git clone <este-repo> meu-projeto && cd meu-projeto
+make setup        # instala Python + Node deps
+make validate     # verifica se ha placeholders pendentes
+make test         # roda lint + testes + build do portal
+```
+
+### Projeto existente
+
+```bash
 git clone <este-repo> /tmp/reviewops
-
-# 2. Execute o script de setup no seu projeto
+cd /caminho/do/seu/projeto
 bash /tmp/reviewops/scripts/setup_reviewops.sh
-
-# 3. Siga as instrucoes do script
 ```
 
-O script detecta automaticamente:
-- Se ja existe `.github/workflows/` (merge seguro)
-- Se ja existe `pyproject.toml` (preserva o seu)
-- Se ja existe `docs-site/` (nao sobrescreve)
+O script detecta o que ja existe e nunca sobrescreve sem perguntar.
+Use `--dry-run` para ver o que seria feito sem alterar nada.
 
 ---
 
 ## Configuracao do GitHub
 
-### 1. Branch protection em `main`
+Apos copiar os arquivos, configure o repositorio:
 
-Ative em Settings > Branches > Branch protection rules:
-- [x] Require status checks to pass before merging
-  - `quality-gates`
-  - `docs-gates`
-- [x] Require conversation resolution before merging
-- [x] Block force pushes
+**1. Branch protection em `main`**
 
-### 2. Permissao para o bot aprovar PRs
+```
+Settings > Branches > Add rule > main
+  [x] Require status checks: quality-gates, docs-gates
+  [x] Require conversation resolution
+  [x] Block force pushes
+```
 
-Settings > Actions > General:
-- [x] Allow GitHub Actions to create and approve pull requests
+**2. Permitir bot aprovar PRs**
 
-### 3. Labels operacionais
+```
+Settings > Actions > General
+  [x] Allow GitHub Actions to create and approve pull requests
+```
+
+**3. Criar labels**
 
 ```bash
 gh label import .github/labels.yml
 ```
 
-### 4. Substitua os placeholders
+**4. Substituir placeholders**
 
-| Arquivo | Placeholder | Substituir por |
-|---|---|---|
-| `.github/CODEOWNERS` | `@org/backend-platform` | Handles reais |
-| `docs-site/docusaurus.config.ts` | `example.github.io` | Seu dominio |
-| `docs-site/docusaurus.config.ts` | `Example Corp` | Nome da empresa |
-| `docs-site/docusaurus.config.ts` | `github.com/example/repo` | URL do seu repo |
-| `scripts/export_openapi.py` | `app.main` | Modulo da sua app FastAPI |
+Execute `make validate` para ver a lista completa, ou edite manualmente:
 
----
-
-## Arquitetura do fluxo de PR
-
-```
-PR aberto
-  └─> pr-ci.yml (quality-gates + docs-gates)  [nao privilegiado, contents: read]
-       └─> required status checks = green
-  └─> pr-approval.yml (workflow_run)           [privilegiado, pull-requests: write]
-       └─> approval_policy.py aplica politica
-       └─> APPROVE somente se elegivel
-  └─> merge em main
-       └─> docs-deploy.yml                     [build + GitHub Pages]
-  └─> push tag v*.*.*
-       └─> docs-version-pr.yml                 [freeze documental + PR automatico]
-```
-
----
-
-## Metricas esperadas
-
-| Metrica | Meta |
+| Arquivo | O que substituir |
 |---|---|
-| Tempo medio de feedback do PR CI | < 10 min |
-| Taxa de PR elegivel ao auto-approval | 20% a 50% |
-| Tempo de publicacao da documentacao apos merge | < 5 min |
-| Versoes de docs ativas em producao | 2 a 3 |
+| `.github/CODEOWNERS` | `@org/team` pelos handles reais |
+| `docs-site/docusaurus.config.ts` | URL, nome da org, titulo do portal |
+| `scripts/export_openapi.py` | Import da sua app FastAPI |
+
+---
+
+## Comandos
+
+Todos os comandos estao no `Makefile`:
+
+| Comando | O que faz |
+|---|---|
+| `make setup` | Instala dependencias Python e Node |
+| `make lint` | Roda ruff check |
+| `make typecheck` | Roda mypy |
+| `make test` | Roda pytest |
+| `make docs` | Exporta OpenAPI + gera API docs + build do portal |
+| `make docs-dev` | Sobe servidor local do portal (localhost:3000) |
+| `make validate` | Verifica placeholders pendentes e prontidao para deploy |
+| `make all` | lint + typecheck + test + docs (tudo de uma vez) |
+
+---
+
+## Estrutura
+
+```
+.github/
+  scripts/
+    approval_policy.py    # logica de aprovacao (11 condicoes de rejeicao)
+    docs_guardrails.py    # falha se codigo publico mudou sem docs
+  workflows/
+    pr-ci.yml             # quality gates (nao privilegiado)
+    pr-approval.yml       # aprovacao (privilegiado, sem checkout do PR)
+    docs-deploy.yml       # deploy GitHub Pages
+    docs-version-pr.yml   # freeze documental em releases
+  CODEOWNERS              # quem revisa o que
+  labels.yml              # labels operacionais
+
+docs-site/                # portal Docusaurus v3
+  docs/                   # conteudo curado (markdown)
+  openapi/                # schema OpenAPI exportado
+  docusaurus.config.ts    # configuracao do portal
+
+scripts/
+  export_openapi.py       # exporta schema da app FastAPI
+  setup_reviewops.sh      # instala em repo existente
+  validate_config.py      # verifica prontidao para deploy
+
+tests/                    # testes unitarios dos scripts
+```
+
+---
+
+## Customizacao
+
+### Ajustar politica de aprovacao
+
+Edite `.github/scripts/approval_policy.py` — as constantes no topo do arquivo:
+
+```python
+BLOCKING_LABELS = {'security', 'breaking-change', ...}  # labels que bloqueiam
+PROTECTED_PATTERNS = [r'^\.github/', ...]                # caminhos protegidos
+MAX_CHANGED_FILES = 30                                    # limite de arquivos
+MAX_TOTAL_DELTA = 800                                     # limite de linhas
+```
+
+### Ajustar guardrails de docs
+
+Edite `.github/scripts/docs_guardrails.py`:
+
+```python
+PUBLIC_CHANGE_PREFIXES = ['src/', 'app/', 'api/', ...]   # codigo publico
+DOC_TOUCH_PREFIXES = ['docs-site/docs/', 'README.md', ...] # docs validos
+```
+
+### Congelar versao de docs
+
+O congelamento e automatico ao criar uma tag:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+# -> workflow abre PR com freeze documental
+# -> revise e faca merge para publicar
+```
+
+Apos o primeiro freeze, descomente o bloco de versionamento em `docusaurus.config.ts`.
 
 ---
 
 ## Stack
 
-- Python 3.12 + Poetry + pytest + ruff + mypy
+- Python 3.12 + Poetry + ruff + pytest + mypy
 - GitHub Actions (4 workflows)
 - Docusaurus v3 + TypeScript + pnpm
-- Plugin: `docusaurus-plugin-openapi-docs` (PaloAltoNetworks)
+- Plugin OpenAPI: `docusaurus-plugin-openapi-docs`
 - Deploy: GitHub Pages
-
----
 
 ## Licenca
 

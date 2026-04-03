@@ -16,6 +16,7 @@
   "dependencies": {
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/preset-classic": "^3.9.2",
+    "@reduxjs/toolkit": "^2.8.2",
     "docusaurus-plugin-openapi-docs": "^4.7.1",
     "docusaurus-theme-openapi-docs": "^4.7.1",
     "react": "^19.0.0",

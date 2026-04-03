@@ -3,6 +3,9 @@
 // Ref: https://webpack.js.org/configuration/resolve/#resolvefallback
 
 module.exports = function webpackFallbackPlugin(_context, _options) {
+  const openApiThemeCommonJsPattern =
+    /[\\/]docusaurus-theme-openapi-docs[\\/]lib[\\/].*\.js$/;
+
   return {
     name: "webpack-fallback-plugin",
     configureWebpack(_config, isServer) {
@@ -26,6 +29,17 @@ module.exports = function webpackFallbackPlugin(_context, _options) {
             net: false,
             tls: false,
           },
+        },
+        module: {
+          rules: [
+            {
+              // The OpenAPI theme ships client files in CommonJS under lib/.
+              // In dev, webpack can interpret them as ESM and leave bare
+              // `exports` references in the browser bundle.
+              test: openApiThemeCommonJsPattern,
+              type: "javascript/auto",
+            },
+          ],
         },
       };
     },

@@ -24,8 +24,11 @@ const config: Config = {
   projectName: "engineering-docs",
 
   onBrokenLinks: "throw",
-  // Em Docusaurus v4, migre para: markdown.hooks.onBrokenMarkdownLinks
-  onBrokenMarkdownLinks: "throw",
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: "throw",
+    },
+  },
 
   i18n: {
     defaultLocale: "pt-BR",

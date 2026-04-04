@@ -1,0 +1,62 @@
+# .docgen.yml — LLM documentation generation configuration
+# Docs: docs/USAGE-GUIDE.md
+
+# Provider selection: ollama | anthropic | openai | claude-code | mock
+provider: ollama
+
+# Global model override (null = use provider default)
+model: null
+
+# Provider-specific settings
+anthropic:
+  api_key: ${ANTHROPIC_API_KEY}
+  model: claude-sonnet-4-20250514
+  max_tokens: 4096
+
+openai:
+  api_key: ${OPENAI_API_KEY}
+  model: gpt-4o
+  max_tokens: 4096
+
+ollama:
+  base_url: http://localhost:11434
+  model: llama3.2
+  timeout: 120
+
+claude_code:
+  binary: claude
+  model: null
+
+# Which document types to generate
+generators:
+  architecture: true
+  standards: true
+  runbook: true
+  adr: true
+  changelog: true
+  api_enricher: false        # enable if you have a FastAPI app configured
+
+# Output settings
+output:
+  docs_dir: docs-site/docs
+  backup: true               # create .bak before overwriting
+  merge_strategy: preserve   # preserve | overwrite | append
+
+# Incremental generation cache
+cache:
+  enabled: true
+  dir: .docgen-cache
+
+# Source files to analyze
+analyze:
+  include:
+    - src/
+    - app/
+    - api/
+    - scripts/
+    - .github/
+  exclude:
+    - node_modules/
+    - .venv/
+    - __pycache__/
+    - "*.pyc"

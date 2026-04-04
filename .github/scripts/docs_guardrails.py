@@ -86,6 +86,9 @@ def main() -> None:
             "\nAdicione ou atualize documentacao em docs-site/docs/, docs/, "
             "README.md ou CHANGELOG.md."
         )
+        print(
+            "\nSUGESTAO: execute 'make docs-gen' para gerar documentacao automaticamente via LLM."
+        )
         sys.exit(1)
 
     print("Politica de freshness de documentacao: OK")

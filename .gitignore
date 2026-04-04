@@ -25,6 +25,10 @@ docs-site/versions.json
 .vscode/
 .idea/
 
+# Docgen
+.docgen-cache/
+*.bak
+
 # Env
 .env
 .env.*

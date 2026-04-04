@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test docs docs-dev validate all clean help
+.PHONY: setup lint typecheck test docs docs-dev docs-gen docs-gen-preview validate all clean help
 
 # Detecta se esta dentro de um venv ou precisa usar poetry run
 PYTHON := $(shell if [ -n "$$VIRTUAL_ENV" ]; then echo python; elif command -v poetry > /dev/null 2>&1; then echo poetry run python; else echo python3; fi)
@@ -69,6 +69,12 @@ docs-typecheck: ## Roda TypeScript check no portal
 
 validate: ## Verifica placeholders pendentes e prontidao para deploy
 	$(PYTHON) scripts/validate_config.py
+
+docs-gen: ## Gera documentacao via LLM (usa .docgen.yml)
+	$(PYTHON) -m scripts.docgen.cli
+
+docs-gen-preview: ## Pre-visualiza docs gerados (nao escreve)
+	$(PYTHON) -m scripts.docgen.cli --preview --verbose
 
 all: lint typecheck test docs ## Roda tudo: lint + types + tests + docs build
 

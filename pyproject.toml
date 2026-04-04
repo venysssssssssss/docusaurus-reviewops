@@ -8,6 +8,8 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.12"
+pyyaml = "^6.0"
+httpx = "^0.28"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.9"
@@ -17,6 +19,7 @@ pytest-mock = "^3.14"
 
 [tool.poetry.scripts]
 export-openapi = "scripts.export_openapi:main"
+docgen = "scripts.docgen.cli:main"
 
 [build-system]
 requires = ["poetry-core"]

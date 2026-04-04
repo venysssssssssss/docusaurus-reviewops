@@ -2,6 +2,9 @@
 id: deploy
 title: Deploy Runbook
 sidebar_label: Deploy
+sidebar_position: 1
+description: "Procedimento de deploy automatico, release, rollback e troubleshooting do portal."
+keywords: [deploy, release, rollback, github-pages, ci-cd]
 ---
 
 # Deploy Runbook
@@ -10,16 +13,20 @@ sidebar_label: Deploy
 
 Todo merge em `main` dispara deploy automaticamente:
 
-```
-merge em main
-  └─> docs-deploy.yml
-       └─> export OpenAPI
-       └─> gera API reference
-       └─> build Docusaurus
-       └─> publica GitHub Pages
+```mermaid
+flowchart TD
+    A["Merge em main"] --> B["docs-deploy.yml"]
+    B --> C["Export OpenAPI"]
+    C --> D["Gera API Reference"]
+    D --> E["Build Docusaurus"]
+    E --> F["Publica GitHub Pages"]
 ```
 
-**Tempo medio:** < 5 minutos do merge ate publicacao.
+:::tip Tempo de deploy
+
+Tempo medio: **< 5 minutos** do merge ate publicacao.
+
+:::
 
 ### Verificacao pos-deploy
 
@@ -31,7 +38,7 @@ merge em main
 
 Para congelar a documentacao junto com uma release:
 
-```bash
+```bash title="Criar e publicar tag de release"
 # 1. Crie e publique a tag
 git tag v1.2.0
 git push origin v1.2.0
@@ -47,9 +54,15 @@ Apos o primeiro freeze, descomente o bloco de versionamento em `docusaurus.confi
 
 ## Rollback
 
+:::danger Procedimento de emergencia
+
+Use rollback apenas quando o portal esta com problemas graves que afetam usuarios.
+
+:::
+
 ### Via revert (preferido)
 
-```bash
+```bash title="Rollback via git revert"
 git revert <sha-do-commit-problematico>
 git push origin main
 # CI faz deploy automaticamente da versao revertida
@@ -59,7 +72,7 @@ git push origin main
 
 Se o portal esta com problemas graves, re-publique a versao anterior:
 
-```bash
+```bash title="Rollback via tag"
 git checkout v1.1.0
 pnpm --dir docs-site install && pnpm --dir docs-site build
 # Upload manual via GitHub Pages ou re-deploy
@@ -73,3 +86,8 @@ pnpm --dir docs-site install && pnpm --dir docs-site build
 | Portal nao atualiza | Deploy esta enfileirado | Verifique Actions > Docs Deploy |
 | API reference vazia | `export_openapi.py` nao configurado | Aponte para sua app FastAPI |
 | Versao nao aparece | Dropdown desativado | Descomente bloco em `docusaurus.config.ts` |
+
+## Veja tambem
+
+- [Architecture Overview](/architecture/overview)
+- [ADR-001: docusaurus-reviewops](/adr/001-docusaurus-reviewops)

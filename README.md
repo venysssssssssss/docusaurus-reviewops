@@ -190,12 +190,22 @@ Apos o primeiro freeze, descomente o bloco de versionamento em `docusaurus.confi
 
 ---
 
+## Documentacao do projeto
+
+| Documento | Conteudo |
+|-----------|----------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura, security model, component map |
+| [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) | Paleta de cores, componentes CSS, assets |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Como contribuir, convencoes de docs |
+| [docs/SPRINT-LOG.md](docs/SPRINT-LOG.md) | Log detalhado da sprint de melhorias |
+| [CHANGELOG.md](CHANGELOG.md) | Historico de mudancas |
+
 ## Stack
 
-- Python 3.12 + Poetry + ruff + pytest + mypy
+- Python 3.12 + ruff + pytest + mypy
 - GitHub Actions (4 workflows)
-- Docusaurus v3 + TypeScript + pnpm
-- Plugin OpenAPI: `docusaurus-plugin-openapi-docs`
+- Docusaurus v3.9.2 + TypeScript + pnpm
+- Plugins: OpenAPI docs, Mermaid, busca local, webpack optimizations
 - Deploy: GitHub Pages
 
 ## Licenca

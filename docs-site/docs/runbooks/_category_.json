@@ -1,0 +1,8 @@
+{
+  "label": "Runbooks",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Procedimentos operacionais passo-a-passo para deploy, rollback e manutencao."
+  }
+}

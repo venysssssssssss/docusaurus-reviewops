@@ -2,13 +2,18 @@
 id: 001-docusaurus-reviewops
 title: "ADR-001: Adocao do docusaurus-reviewops"
 sidebar_label: "ADR-001: docusaurus-reviewops"
+sidebar_position: 1
+description: "Decisao de adotar o sistema docusaurus-reviewops para automacao de PR e documentacao viva."
+keywords: [adr, decisao, automacao, pr-review, docusaurus]
 ---
 
 # ADR-001: Adocao do docusaurus-reviewops
 
-**Status:** Aceito  
-**Data:** 2026-04-02  
-**Autores:** Equipe de plataforma
+:::tip Status
+
+**Aceita** — 2026-04-02 — Equipe de plataforma
+
+:::
 
 ---
 
@@ -49,10 +54,19 @@ Adotar o `docusaurus-reviewops` — um sistema de governanca que combina:
 
 ## Principio de seguranca
 
+:::danger fail_closed
+
 O bot segue o principio **fail_closed**: na duvida, nao aprova. Qualquer condicao nao prevista resulta em encerramento silencioso sem aprovacao, preservando a necessidade de revisao humana.
+
+:::
 
 ## Referencias
 
 - Blueprint de Excelencia — Agente de revisao e aprovacao automatica + Docusaurus (01/04/2026)
 - [GitHub Docs — Secure use reference](https://docs.github.com/en/actions/reference/security/secure-use)
 - [Docusaurus — Versioning](https://docusaurus.io/docs/versioning)
+
+## Veja tambem
+
+- [Architecture Overview](/architecture/overview)
+- [Deploy Runbook](/runbooks/deploy)

@@ -16,9 +16,15 @@
   "dependencies": {
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/preset-classic": "^3.9.2",
+    "@docusaurus/theme-common": "^3.9.2",
+    "@docusaurus/theme-mermaid": "^3.9.2",
+    "@easyops-cn/docusaurus-search-local": "^0.55.1",
     "@reduxjs/toolkit": "^2.8.2",
+    "clsx": "^2.1.1",
     "docusaurus-plugin-openapi-docs": "^4.7.1",
     "docusaurus-theme-openapi-docs": "^4.7.1",
+    "file-saver": "^2.0.5",
+    "lodash": "^4.18.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

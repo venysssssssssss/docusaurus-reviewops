@@ -10,7 +10,7 @@ const config: Config = {
   title: "Engineering Docs",
   // TODO: Substitua pelo tagline da sua empresa/produto
   tagline: "Documentacao viva de produto, plataforma e operacao",
-  favicon: "img/favicon.ico",
+  favicon: "img/favicon.svg",
 
   // TODO: Substitua pelo dominio do GitHub Pages da sua org
   // Ex: "https://minha-org.github.io"
@@ -25,6 +25,7 @@ const config: Config = {
 
   onBrokenLinks: "throw",
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: "throw",
     },
@@ -88,12 +89,45 @@ const config: Config = {
         },
       },
     ],
+    // Busca local offline — sem necessidade de conta Algolia
+    [
+      require.resolve("@easyops-cn/docusaurus-search-local"),
+      {
+        hashed: true,
+        language: ["pt", "en"],
+        indexBlog: false,
+        docsRouteBasePath: "/",
+      },
+    ],
+    // Para otimizacao de imagens, instale @docusaurus/plugin-ideal-image
+    // e descomente a config abaixo (requer build nativo do sharp):
+    // ["@docusaurus/plugin-ideal-image", { quality: 85, max: 1200, min: 400 }],
   ],
 
-  themes: ["docusaurus-theme-openapi-docs"],
+  themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
 
   themeConfig: {
     image: "img/social-card.png",
+
+    // Respeita preferencia de dark/light mode do sistema
+    colorMode: {
+      respectPrefersColorScheme: true,
+    },
+
+    // Banner informativo — remova apos configurar os placeholders
+    announcementBar: {
+      id: "setup-notice",
+      content:
+        "Portal em construcao — substitua os <strong>placeholders TODO</strong> antes de publicar. Execute <code>make validate</code> para verificar.",
+      backgroundColor: "#2e86ab",
+      textColor: "#fff",
+      isCloseable: true,
+    },
+
+    metadata: [
+      { name: "keywords", content: "documentacao, API, arquitetura, engenharia" },
+    ],
+
     navbar: {
       // TODO: Substitua pelo titulo do portal
       title: "Engineering Docs",

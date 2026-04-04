@@ -1,11 +1,19 @@
 /**
  * Estilos customizados do portal de documentacao.
  * Extende o tema classic do Docusaurus.
+ *
+ * Inspiracao: Stripe Docs (cards), Tailwind Docs (tipografia),
+ * Vercel Docs (navbar blur), GitHub Docs (footer).
+ *
  * Substitua as cores pelas cores da sua marca.
  */
 
-/* Cores primarias — TODO: substitua pela paleta da sua marca */
+/* ==========================================================================
+   CORES E VARIAVEIS GLOBAIS
+   ========================================================================== */
+
 :root {
+  /* Paleta primaria — TODO: substitua pela paleta da sua marca */
   --ifm-color-primary: #2e86ab;
   --ifm-color-primary-dark: #287697;
   --ifm-color-primary-darker: #25708e;
@@ -13,8 +21,21 @@
   --ifm-color-primary-light: #3496bf;
   --ifm-color-primary-lighter: #379cc8;
   --ifm-color-primary-lightest: #47aad2;
+
+  /* Tipografia */
+  --ifm-line-height-base: 1.75;
+  --ifm-paragraph-margin-bottom: 1.25rem;
+  --ifm-heading-margin-bottom: 0.75rem;
   --ifm-code-font-size: 95%;
+
+  /* Code highlighting */
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* Espacamento */
+  --ifm-spacing-horizontal: 1.5rem;
+
+  /* Bordas */
+  --ifm-global-radius: 0.5rem;
 }
 
 /* Modo escuro */
@@ -29,17 +50,225 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
-/* Navbar */
+/* ==========================================================================
+   NAVBAR — Frosted glass (inspiracao Vercel)
+   ========================================================================== */
+
+.navbar {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .navbar {
+  background: rgba(30, 30, 30, 0.85);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
 .navbar__brand {
   font-weight: 700;
 }
 
-/* Badges de versao no sidebar */
+.navbar__link:hover {
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   SIDEBAR — Active link accent (inspiracao Stripe)
+   ========================================================================== */
+
+.menu__link--active:not(.menu__link--sublist) {
+  border-left: 3px solid var(--ifm-color-primary);
+  padding-left: calc(var(--ifm-menu-link-padding-horizontal) - 3px);
+  background: rgba(46, 134, 171, 0.08);
+  border-radius: 0 var(--ifm-global-radius) var(--ifm-global-radius) 0;
+}
+
+[data-theme="dark"] .menu__link--active:not(.menu__link--sublist) {
+  background: rgba(71, 170, 210, 0.1);
+}
+
+/* ==========================================================================
+   CARDS — Category index pages (inspiracao Tailwind)
+   ========================================================================== */
+
+.card {
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .card {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   ADMONITIONS — Bordas arredondadas
+   ========================================================================== */
+
+.admonition {
+  border-radius: var(--ifm-global-radius);
+  border-left-width: 4px;
+}
+
+/* ==========================================================================
+   TABELAS — Responsividade mobile
+   ========================================================================== */
+
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.markdown thead th {
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   CODE BLOCKS — Bordas e titulos
+   ========================================================================== */
+
+.prism-code {
+  border-radius: var(--ifm-global-radius);
+}
+
+div[class*="codeBlockTitle"] {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--ifm-global-radius) var(--ifm-global-radius) 0 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="dark"] div[class*="codeBlockTitle"] {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   FOOTER — Estilo limpo (inspiracao GitHub Docs)
+   ========================================================================== */
+
+.footer {
+  border-top: 1px solid var(--ifm-toc-border-color);
+}
+
+.footer__title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   HERO SECTION — Homepage gradient
+   ========================================================================== */
+
+.hero-section {
+  background: linear-gradient(135deg, #2e86ab 0%, #1e5c76 100%);
+  color: white;
+  padding: 2.5rem 2rem;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+}
+
+.hero-section h1 {
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.hero-section p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+[data-theme="dark"] .hero-section {
+  background: linear-gradient(135deg, #1e5c76 0%, #153d50 100%);
+}
+
+/* ==========================================================================
+   BADGES — Versao e API
+   ========================================================================== */
+
 .badge--secondary {
   font-size: 0.75rem;
 }
 
-/* API reference — melhora legibilidade das rotas */
 .openapi-method-badge {
   font-weight: 600;
+}
+
+/* ==========================================================================
+   SEARCH — Estilos do input
+   ========================================================================== */
+
+.navbar__search-input {
+  border-radius: 2rem;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s ease;
+}
+
+.navbar__search-input:focus {
+  border-color: var(--ifm-color-primary);
+}
+
+[data-theme="dark"] .navbar__search-input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   ANNOUNCEMENT BAR — Contraste
+   ========================================================================== */
+
+div[class*="announcementBar"] a {
+  color: white;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   MERMAID — Ajustes de tema
+   ========================================================================== */
+
+.docusaurus-mermaid-container {
+  margin: 1.5rem 0;
+}
+
+/* ==========================================================================
+   PAGINA 404 — Centralizacao
+   ========================================================================== */
+
+.not-found-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.not-found-container h1 {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+  color: var(--ifm-color-primary);
+}
+
+.not-found-container p {
+  font-size: 1.2rem;
+  color: var(--ifm-font-color-secondary);
+  margin-bottom: 2rem;
 }

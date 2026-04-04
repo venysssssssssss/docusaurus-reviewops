@@ -2,11 +2,18 @@
 id: coding-standards
 title: Coding Standards
 sidebar_label: Coding Standards
+sidebar_position: 1
+description: "Convencoes de codigo, linting, testes e padroes de PR do time."
+keywords: [padroes, codigo, lint, ruff, mypy, python, convencoes]
 ---
 
 # Coding Standards
 
-<!-- TODO: Substitua pelas convencoes reais do seu projeto -->
+:::note Personalize
+
+Adapte estas convencoes ao stack real do seu projeto. Os valores abaixo sao defaults razoaveis para projetos Python.
+
+:::
 
 ## Stack assumida
 
@@ -26,7 +33,7 @@ sidebar_label: Coding Standards
 
 ### Estrutura de modulos
 
-```
+```text title="Estrutura de diretorios"
 src/
   domain/       # entidades e logica de negocio pura
   application/  # casos de uso e servicos de aplicacao
@@ -56,7 +63,7 @@ src/
 
 ### Commits
 
-```
+```text title="Exemplos de Conventional Commits"
 feat(api): adiciona endpoint de export
 fix(worker): corrige race condition no processamento
 docs(runbook): atualiza procedimento de rollback
@@ -64,15 +71,28 @@ docs(runbook): atualiza procedimento de rollback
 
 ## Seguranca
 
+:::danger Regras inegociaveis
+
 - Nunca commitar secrets, tokens ou credenciais
 - Validar inputs em todos os endpoints publicos
 - SQL: sempre usar parameterized queries
 - Logs: nunca logar dados sensiveis (PII, tokens)
 
+:::
+
 ## Revisao de codigo
 
-Checklist obrigatorio antes de abrir PR:
+:::warning Checklist obrigatorio antes de abrir PR
+
 - [ ] `ruff check .` passa sem erros
 - [ ] `mypy src` passa
 - [ ] Testes novos cobrem o comportamento adicionado/modificado
 - [ ] Documentacao atualizada se comportamento publico mudou
+
+:::
+
+## Veja tambem
+
+- [Architecture Overview](/architecture/overview)
+- [Deploy Runbook](/runbooks/deploy)
+- [ADR-001: docusaurus-reviewops](/adr/001-docusaurus-reviewops)

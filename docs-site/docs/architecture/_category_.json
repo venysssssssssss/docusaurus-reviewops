@@ -1,0 +1,8 @@
+{
+  "label": "Architecture",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Visao geral da arquitetura do sistema — componentes, fluxo de dados e decisoes de design."
+  }
+}

@@ -32,3 +32,4 @@ docs-site/versions.json
 # Env
 .env
 .env.*
+!.env.example

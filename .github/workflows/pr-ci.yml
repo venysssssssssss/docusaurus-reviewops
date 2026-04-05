@@ -57,12 +57,23 @@ jobs:
       - name: Type check (mypy)
         run: PYTHONPATH=. poetry run mypy src .github/scripts scripts
 
-      - name: Tests
+      - name: Tests with coverage
         run: |
           mkdir -p reports
           poetry run pytest -q --maxfail=1 \
             --disable-warnings \
-            --junitxml=reports/pytest.xml
+            --junitxml=reports/pytest.xml \
+            --cov=scripts --cov=.github/scripts \
+            --cov-report=term-missing \
+            --cov-report=xml:reports/coverage.xml \
+            --cov-fail-under=80
+
+      - name: Coverage job summary
+        if: always()
+        run: |
+          echo "## Coverage Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          poetry run python -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
       - name: Upload pytest report
         if: always()
@@ -70,6 +81,14 @@ jobs:
         with:
           name: pytest-report
           path: reports/pytest.xml
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: reports/coverage.xml
           retention-days: 14
 
   # -----------------------------------------------------------------------
@@ -121,7 +140,9 @@ jobs:
 
       - name: Export OpenAPI schema
         # Ignora erro se nao houver app FastAPI configurada ainda (modo bootstrap)
-        run: poetry run python scripts/export_openapi.py || echo "AVISO: export_openapi.py nao configurado — pulando"
+        run: |
+          poetry run python scripts/export_openapi.py \
+            || echo "AVISO: export_openapi.py nao configurado - pulando"
 
       - name: Generate API reference docs
         run: pnpm --dir docs-site docusaurus gen-api-docs all

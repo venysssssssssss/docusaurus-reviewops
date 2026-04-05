@@ -1,0 +1,10 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Vulnerabilidade de seguranca
+    url: https://github.com/venysssssssssss/docusaurus-reviewops/security/advisories/new
+    about: Reporte vulnerabilidades de seguranca de forma responsavel (nao use issues publicas)
+
+  - name: Discussao / Pergunta
+    url: https://github.com/venysssssssssss/docusaurus-reviewops/discussions
+    about: Para perguntas gerais, use Discussions em vez de Issues

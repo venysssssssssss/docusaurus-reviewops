@@ -14,6 +14,7 @@ httpx = "^0.28"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.9"
 pytest = "^8.3"
+pytest-cov = "^6.0"
 mypy = "^1.15"
 pytest-mock = "^3.14"
 types-pyyaml = "^6.0"
@@ -43,3 +44,13 @@ disallow_untyped_defs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+
+[tool.coverage.run]
+source = ["scripts", ".github/scripts"]
+omit = ["*/test_*", "tests/*", "scripts/docgen/providers/mock.py"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 80

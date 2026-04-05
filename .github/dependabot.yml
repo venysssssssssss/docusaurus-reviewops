@@ -1,0 +1,59 @@
+version: 2
+
+updates:
+  # Python dependencies (pyproject.toml / poetry.lock)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"
+    # Note: Dependabot PRs that update pyproject.toml or poetry.lock will NOT
+    # be auto-approved by approval_policy.py — they touch protected paths and
+    # require human review. This is intentional: dependency bumps may introduce
+    # breaking changes or security regressions that automated tests don't catch.
+    ignore:
+      # Only accept patch-level updates automatically; minor/major require manual review
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Node.js dependencies (docs-site/package.json / pnpm-lock.yaml)
+  - package-ecosystem: "npm"
+    directory: "/docs-site"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "javascript"
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions (uses: owner/action@version pins)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+    # GitHub Actions updates DO touch .github/ — also protected, requires human review.

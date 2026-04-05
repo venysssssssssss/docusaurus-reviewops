@@ -41,7 +41,17 @@ BLOCKING_LABELS: set[str] = {
     "needs-human-review",
 }
 
-# Padroes de caminho protegidos — PRs que tocam esses arquivos nunca sao auto-aprovados
+# Padroes de caminho protegidos — PRs que tocam esses arquivos nunca sao auto-aprovados.
+#
+# Design decision — Dependabot PRs:
+# Dependabot PRs que atualizam pyproject.toml, poetry.lock, package.json ou pnpm-lock.yaml
+# caem aqui e NAO sao auto-aprovados. Isso e intencional:
+#   1. Bumps de dependencia podem introduzir breaking changes ou regressoes de seguranca
+#      que os testes automatizados nao detectam (ex: mudancas de comportamento sutis).
+#   2. O Dependabot agrupa atualizacoes e o delta de lockfile pode ser grande e opaco.
+#   3. A revisao humana de deps e considerada parte essencial da postura de seguranca.
+# Se quiser auto-aprovar Dependabot para patches, remova os patterns de lockfile acima
+# E adicione uma condicao: `if pr.get("user", {}).get("login") == "dependabot[bot]"`.
 PROTECTED_PATTERNS: list[str] = [
     r"^\.github/",
     r"^infra/",
@@ -60,7 +70,11 @@ PROTECTED_PATTERNS: list[str] = [
 
 # Limites de tamanho do PR
 MAX_CHANGED_FILES = 30
-MAX_TOTAL_DELTA = 800  # adicoes + remocoes
+MAX_TOTAL_DELTA = 800   # total de linhas adicionadas + removidas
+MAX_NET_CHANGE = 400    # net change = |adicoes - remocoes|; refactors grandes mas equilibrados
+#                         podem ter MAX_TOTAL_DELTA alto mas net baixo — esse gate captura
+#                         PRs que reescrevem funcionalidade significativa mascarados como
+#                         "refactoring neutro" (ex: 600 add + 600 del = 1200 delta, 0 net).
 
 # ---------------------------------------------------------------------------
 # Utilitarios de API
@@ -143,9 +157,19 @@ def main() -> None:
     if len(files) > MAX_CHANGED_FILES:
         fail_closed(f"muitos arquivos alterados ({len(files)} > {MAX_CHANGED_FILES})")
 
-    total_delta = sum(f.get("additions", 0) + f.get("deletions", 0) for f in files)
+    total_additions = sum(f.get("additions", 0) for f in files)
+    total_deletions = sum(f.get("deletions", 0) for f in files)
+    total_delta = total_additions + total_deletions
+    net_change = abs(total_additions - total_deletions)
+
     if total_delta > MAX_TOTAL_DELTA:
         fail_closed(f"diff muito grande ({total_delta} linhas > {MAX_TOTAL_DELTA})")
+
+    if net_change > MAX_NET_CHANGE:
+        fail_closed(
+            f"net change muito grande ({net_change} linhas > {MAX_NET_CHANGE}) — "
+            "PR reescreve funcionalidade significativa e requer revisao humana"
+        )
 
     # Caminhos protegidos
     filenames = [f["filename"] for f in files]

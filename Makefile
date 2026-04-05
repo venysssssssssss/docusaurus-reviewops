@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test docs docs-dev docs-gen docs-gen-preview validate all clean help
+.PHONY: setup lint typecheck test coverage docs docs-dev docs-gen docs-gen-preview validate all clean help
 
 # Detecta se esta dentro de um venv ou precisa usar poetry run
 PYTHON := $(shell if [ -n "$$VIRTUAL_ENV" ]; then echo python; elif command -v poetry > /dev/null 2>&1; then echo poetry run python; else echo python3; fi)
@@ -46,6 +46,13 @@ typecheck: ## Roda mypy no src e scripts
 
 test: ## Roda pytest
 	$(PYTEST) tests/ -v
+
+coverage: ## Roda pytest com cobertura (falha se < 80%)
+	$(PYTEST) tests/ -v \
+		--cov=scripts --cov=.github/scripts \
+		--cov-report=term-missing \
+		--cov-report=html:reports/coverage \
+		--cov-fail-under=80
 
 docs: ## Exporta OpenAPI + gera API docs + build do portal
 	@echo "--- Exportando OpenAPI ---"

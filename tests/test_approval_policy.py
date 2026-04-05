@@ -132,6 +132,34 @@ class TestMainRejectsTooLargeDelta:
             policy.main()
         assert exc.value.code == 0
 
+    def test_large_net_change_rejected(self, policy: types.ModuleType) -> None:
+        """PR com net change > 400 e rejeitado mesmo com total_delta <= 800."""
+        pr = _make_pr()
+        # total_delta = 550 (dentro do limite), net_change = 450 (acima do limite)
+        files = [_make_file("src/rewrite.py", additions=500, deletions=50)]
+        with patch.object(policy, "api_request", return_value=pr), patch.object(
+            policy, "paginate", return_value=files
+        ), pytest.raises(SystemExit) as exc:
+            policy.main()
+        assert exc.value.code == 0
+
+    def test_balanced_refactor_passes_net_check(self, policy: types.ModuleType) -> None:
+        """Refactor equilibrado (additions ~ deletions) passa no gate de net change."""
+        pr = _make_pr()
+        # total_delta = 600 (abaixo de 800), net_change = 0 (passes MAX_NET_CHANGE=400)
+        files = [_make_file("src/refactor.py", additions=300, deletions=300)]
+        reviews: list = []
+
+        def paginate_side_effect(path: str) -> list:
+            if "files" in path:
+                return files
+            return reviews
+
+        with patch.object(policy, "api_request", return_value=pr), patch.object(
+            policy, "paginate", side_effect=paginate_side_effect
+        ):
+            policy.main()  # deve aprovar sem levantar SystemExit
+
 
 class TestMainRejectsProtectedPaths:
     @pytest.mark.parametrize(

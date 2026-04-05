@@ -1,0 +1,65 @@
+name: Feature Request
+description: Sugira uma melhoria ou nova funcionalidade
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado pela sugestao! Descreva a funcionalidade que voce gostaria de ver implementada.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area de melhoria
+      options:
+        - Politica de aprovacao (approval_policy.py)
+        - Guardrails de documentacao (docs_guardrails.py)
+        - Geracao de docs via LLM (docgen)
+        - Portal Docusaurus
+        - CI/CD workflows
+        - CLI / Makefile
+        - Documentacao do projeto
+        - Outra area
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema ou motivacao
+      description: Qual problema esta funcionalidade resolveria? Qual e o contexto?
+      placeholder: "Hoje quando faço X, preciso fazer Y manualmente. Seria mais eficiente se..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solucao proposta
+      description: Como voce imagina que essa funcionalidade deveria funcionar?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Ha outras formas de resolver o problema? Por que a solucao proposta e melhor?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional
+      description: Screenshots, links, exemplos de outros projetos, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Verifiquei que nao ha feature request similar ja aberta
+          required: true
+        - label: Esta feature esta alinhada com o objetivo do projeto (govername de PR + docs vivos)
+          required: true

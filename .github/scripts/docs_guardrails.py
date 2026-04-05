@@ -12,8 +12,13 @@ Politica de relevancia:
     Isso previne o bypass trivial de adicionar uma linha em CHANGELOG.md para
     satisfazer a politica em mudancas substanciais de funcionalidade.
 
-Customizacao: ajuste PUBLIC_CHANGE_PREFIXES e DOC_TOUCH_PREFIXES conforme
-a estrutura do seu repositorio.
+Mapeamento semantico (AREA_DOC_MAP):
+  Cada area de codigo publica tem uma secao de documentacao correspondente.
+  Quando codigo de uma area muda, a politica sugere a secao de doc correta
+  na mensagem de erro. Isso orienta o desenvolvedor ao inves de apenas falhar.
+
+Customizacao: ajuste PUBLIC_CHANGE_PREFIXES, DOC_TOUCH_PREFIXES e AREA_DOC_MAP
+conforme a estrutura do seu repositorio.
 
 Variaveis de ambiente requeridas (injetadas pelo pr-ci.yml):
   BASE_SHA — SHA da base do PR
@@ -65,6 +70,15 @@ IGNORED_CODE_PREFIXES: list[str] = [
 # Threshold: acima deste numero de arquivos publicos alterados, exige doc especifica
 LARGE_CHANGE_THRESHOLD: int = 3
 
+# Mapeamento semantico: area de codigo -> secao de documentacao correspondente.
+# Usado para orientar o desenvolvedor na mensagem de erro quando docs estao faltando.
+AREA_DOC_MAP: dict[str, str] = {
+    "src/": "docs-site/docs/architecture/ ou docs-site/docs/standards/",
+    "app/": "docs-site/docs/architecture/ ou docs-site/docs/runbooks/",
+    "api/": "docs-site/docs/api/ ou docs-site/openapi/",
+    "openapi/": "docs-site/docs/api/ ou docs-site/openapi/",
+}
+
 # ---------------------------------------------------------------------------
 # Logica principal
 # ---------------------------------------------------------------------------
@@ -110,6 +124,21 @@ def main() -> None:
         print("Arquivos publicos alterados:")
         for item in public_changes:
             print(f"  - {item}")
+
+        # Orientacao semantica: sugere a secao de doc mais relevante para cada area tocada
+        areas_touched = {
+            prefix
+            for prefix in PUBLIC_CHANGE_PREFIXES
+            if any(f.startswith(prefix) for f in public_changes)
+        }
+        suggested_docs: list[str] = list({
+            AREA_DOC_MAP[area] for area in areas_touched if area in AREA_DOC_MAP
+        })
+        if suggested_docs:
+            print("\nSecoes de documentacao recomendadas para as areas alteradas:")
+            for suggestion in sorted(suggested_docs):
+                print(f"  -> {suggestion}")
+
         print(
             "\nAdicione ou atualize documentacao em docs-site/docs/, docs/, "
             "README.md ou CHANGELOG.md."

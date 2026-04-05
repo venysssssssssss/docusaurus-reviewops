@@ -1,0 +1,81 @@
+name: Bug Report
+description: Reporte um bug ou comportamento inesperado
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar um bug! Preencha o formulario abaixo com o maximo de detalhes possivel.
+
+        Se for uma vulnerabilidade de seguranca, nao use este formulario — consulte [SECURITY.md](../SECURITY.md).
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Componente afetado
+      description: Qual parte do sistema apresentou o problema?
+      options:
+        - approval_policy.py (auto-aprovacao de PRs)
+        - docs_guardrails.py (freshness de docs)
+        - pr-ci.yml (quality gates)
+        - pr-approval.yml (workflow de aprovacao)
+        - docs-deploy.yml (deploy do portal)
+        - docs-gen / docgen (geracao via LLM)
+        - Portal Docusaurus (visual / build)
+        - scripts/validate_config.py
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descricao do bug
+      description: O que aconteceu? O que voce esperava que acontecesse?
+      placeholder: |
+        Comportamento atual: ...
+        Comportamento esperado: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passos para reproduzir
+      description: Como reproduzir o problema passo a passo?
+      placeholder: |
+        1. Execute `make ...`
+        2. Abra um PR com ...
+        3. Observe que ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs relevantes
+      description: Cole aqui a saida do terminal, logs do Actions ou mensagens de erro.
+      render: shell
+
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: "Python version, OS, branch, commit SHA"
+      placeholder: "Python 3.12.x, Ubuntu 22.04, master @ abc1234"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Verifiquei que nao ha issue duplicada aberta
+          required: true
+        - label: Testei no branch master mais recente
+          required: true
+        - label: Esta nao e uma vulnerabilidade de seguranca (se for, consulte SECURITY.md)
+          required: true

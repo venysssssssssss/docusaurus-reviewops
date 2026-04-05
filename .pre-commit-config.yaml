@@ -1,0 +1,37 @@
+repos:
+  # Ruff — lint + format (substitui flake8, isort, pyupgrade, black)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # pre-commit-hooks — utilidades gerais
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]   # permite tags customizadas em YAML (ex: !reference no GitLab CI)
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, master]  # protege master de commits diretos
+
+  # mypy — type checking
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        language: system
+        entry: poetry run mypy src .github/scripts scripts
+        types: [python]
+        pass_filenames: false
+        env:
+          PYTHONPATH: .

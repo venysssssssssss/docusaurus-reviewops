@@ -595,6 +595,50 @@ Significa que voce alterou codigo publico (`src/`, `app/`, `api/`) sem documenta
 A mensagem de erro agora inclui a secao de docs recomendada para cada area de codigo tocada
 (via `AREA_DOC_MAP` em `docs_guardrails.py`).
 
+### Ollama: "Cannot connect" ao rodar make docs-gen
+
+O docgen usa Ollama por padrão. Se aparecer `LLMConnectionError: Cannot connect to Ollama`:
+
+```bash title="Iniciar Ollama"
+ollama serve               # em outro terminal
+ollama pull llama3.2       # baixar modelo (primeira vez, ~2GB)
+make docs-gen              # tentar novamente
+```
+
+```bash title="Verificar se Ollama está rodando"
+curl http://localhost:11434/api/tags   # deve retornar JSON com lista de modelos
+```
+
+### Ollama: geração muito lenta ou sem resposta
+
+O timeout padrão é 120s. Para modelos grandes ou hardware limitado:
+
+```yaml title=".docgen.yml — aumentar timeout"
+ollama:
+  timeout: 300        # 5 minutos
+  model: llama3.2     # use modelos menores se necessário (phi3, gemma2:2b)
+```
+
+### Mudar de Ollama para Anthropic ou OpenAI
+
+```bash title="Opção 1: via variável de ambiente (temporário)"
+DOCGEN_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-... make docs-gen
+```
+
+```yaml title="Opção 2: via .docgen.yml (permanente)"
+provider: anthropic
+anthropic:
+  api_key: ${ANTHROPIC_API_KEY}    # definir em .env ou export
+```
+
+### Arquivos omitidos do contexto LLM
+
+Se a saída do CLI mostrar `N files omitted — context limit reached`, significa que o codebase é grande demais para caber em uma única chamada. Para resolver:
+
+1. Use `--generators architecture` para gerar um doc por vez
+2. Ajuste `analyze.include` no `.docgen.yml` para incluir apenas diretórios relevantes
+3. Use um modelo com janela de contexto maior (ex: `claude-opus-4-6`)
+
 ### Portal nao aparece no GitHub Pages
 
 1. Verifique Settings > Pages > Source = "GitHub Actions"

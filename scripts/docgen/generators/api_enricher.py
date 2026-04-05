@@ -70,8 +70,17 @@ class APIEnricherGenerator(DocGenerator):
             return None
         try:
             schema = json.loads(_OPENAPI_PATH.read_text(encoding="utf-8"))
-            # Skip placeholder schemas
-            if schema.get("info", {}).get("version") == "0.0.0":
+            # A configured schema must have at least one endpoint with an
+            # operationId. Schemas without operationIds are either stubs or
+            # auto-generated placeholders not ready for enrichment.
+            paths = schema.get("paths", {})
+            has_operation_id = any(
+                isinstance(op, dict) and op.get("operationId")
+                for methods in paths.values()
+                for op in methods.values()
+                if isinstance(op, dict)
+            )
+            if not has_operation_id:
                 return None
             return schema
         except (json.JSONDecodeError, OSError):
@@ -82,12 +91,15 @@ class APIEnricherGenerator(DocGenerator):
         if schema is None:
             return "", None  # No valid schema to enrich
 
-        paths = schema.get("paths", {})
-        enriched = False
+        paths: dict = schema.get("paths", {})
         last_response: LLMResponse | None = None
 
-        for path_str, methods in paths.items():
-            for method, operation in methods.items():
+        # --- Pass 1: collect enrichments without mutating the dict ---
+        # Storing (path_str, method, new_description) tuples.
+        updates: list[tuple[str, str, str]] = []
+
+        for path_str, methods in list(paths.items()):
+            for method, operation in list(methods.items()):
                 if method.startswith("x-") or not isinstance(operation, dict):
                     continue
 
@@ -113,10 +125,13 @@ class APIEnricherGenerator(DocGenerator):
                 new_desc = sanitize_llm_output(last_response.content).strip()
 
                 if new_desc:
-                    operation["description"] = new_desc
-                    enriched = True
+                    updates.append((path_str, method, new_desc))
 
-        if not enriched:
+        if not updates:
             return "", None
+
+        # --- Pass 2: apply collected enrichments ---
+        for path_str, method, new_desc in updates:
+            schema["paths"][path_str][method]["description"] = new_desc
 
         return json.dumps(schema, indent=2, ensure_ascii=False), last_response

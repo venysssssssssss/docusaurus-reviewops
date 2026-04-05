@@ -34,7 +34,7 @@ generators:
   runbook: true
   adr: true
   changelog: true
-  api_enricher: false        # enable if you have a FastAPI app configured
+  api_enricher: true         # auto-skipped when no configured OpenAPI schema is found
 
 # Output settings
 output:

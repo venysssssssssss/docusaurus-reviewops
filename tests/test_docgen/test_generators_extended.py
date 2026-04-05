@@ -275,20 +275,29 @@ class TestAPIEnricherGenerator:
         assert content == ""
         assert response is None
 
-    def test_generate_skips_placeholder_schema(
+    def test_generate_skips_schema_without_operation_ids(
         self, mock_provider: MockProvider, sample_config: DocgenConfig, tmp_path: Path
     ) -> None:
-        """Schema with version 0.0.0 is treated as placeholder and skipped."""
-        schema = {"info": {"version": "0.0.0"}, "paths": {}}
-        schema_path = tmp_path / "docs-site" / "openapi"
-        schema_path.mkdir(parents=True)
-        (schema_path / "openapi.json").write_text(json.dumps(schema))
+        """Schema with no operationId in any endpoint is treated as a stub and skipped."""
+        schema = {
+            "info": {"version": "1.0.0", "title": "Stub API"},
+            "paths": {
+                "/ping": {
+                    "get": {
+                        "summary": "Ping",
+                        # no operationId — stub schema
+                    }
+                }
+            },
+        }
+        schema_path = tmp_path / "openapi.json"
+        schema_path.write_text(json.dumps(schema))
 
         snapshot = analyze_codebase(tmp_path, [], [])
         gen = APIEnricherGenerator(mock_provider, sample_config)
         with patch(
             "scripts.docgen.generators.api_enricher._OPENAPI_PATH",
-            schema_path / "openapi.json",
+            schema_path,
         ):
             content, response = gen.generate(snapshot)
         assert content == ""
@@ -362,3 +371,135 @@ class TestAPIEnricherGenerator:
         # No LLM calls should have been made
         assert calls == []
         assert content == ""
+
+    def test_two_pass_enriches_all_matching_endpoints(
+        self, mock_provider: MockProvider, sample_config: DocgenConfig, tmp_path: Path
+    ) -> None:
+        """Two-pass approach enriches all endpoints needing descriptions."""
+        schema = {
+            "info": {"version": "1.0.0", "title": "Test API"},
+            "paths": {
+                "/users": {
+                    "get": {"operationId": "list_users", "description": ""},
+                    "post": {"operationId": "create_user", "description": ""},
+                },
+                "/users/{id}": {
+                    "delete": {"operationId": "delete_user", "description": "short"},
+                },
+            },
+        }
+        schema_path = tmp_path / "openapi.json"
+        schema_path.write_text(json.dumps(schema))
+
+        snapshot = analyze_codebase(tmp_path, [], [])
+        gen = APIEnricherGenerator(mock_provider, sample_config)
+        with patch("scripts.docgen.generators.api_enricher._OPENAPI_PATH", schema_path):
+            content, _ = gen.generate(snapshot)
+
+        enriched = json.loads(content)
+        # All 3 endpoints had short/empty descriptions — all should be enriched
+        assert enriched["paths"]["/users"]["get"]["description"] != ""
+        assert enriched["paths"]["/users"]["post"]["description"] != ""
+        assert enriched["paths"]["/users/{id}"]["delete"]["description"] != ""
+
+    def test_extension_methods_are_not_enriched(
+        self, mock_provider: MockProvider, sample_config: DocgenConfig, tmp_path: Path
+    ) -> None:
+        """Methods starting with 'x-' (OpenAPI extensions) must be skipped."""
+        schema = {
+            "info": {"version": "1.0.0", "title": "Test API"},
+            "paths": {
+                "/items": {
+                    "get": {"operationId": "list_items", "description": ""},
+                    "x-amazon-apigateway-any-method": {
+                        "description": "vendor extension — must not be enriched",
+                    },
+                }
+            },
+        }
+        schema_path = tmp_path / "openapi.json"
+        schema_path.write_text(json.dumps(schema))
+
+        calls: list[str] = []
+        original = mock_provider.generate
+
+        def track(prompt: str, **kw: object) -> object:
+            calls.append(prompt)
+            return original(prompt, **kw)
+
+        mock_provider.generate = track  # type: ignore[method-assign]
+        snapshot = analyze_codebase(tmp_path, [], [])
+        gen = APIEnricherGenerator(mock_provider, sample_config)
+        with patch("scripts.docgen.generators.api_enricher._OPENAPI_PATH", schema_path):
+            gen.generate(snapshot)
+
+        # Only 1 call for the real GET endpoint; x- extension is not called
+        assert len(calls) == 1
+        assert "/items" in calls[0]
+
+    def test_mixed_endpoints_only_enrich_undescribed(
+        self, mock_provider: MockProvider, sample_config: DocgenConfig, tmp_path: Path
+    ) -> None:
+        """Mix of described and undescribed: only undescribed ones are enriched."""
+        long_desc = "A fully documented endpoint with a sufficiently long description."
+        schema = {
+            "info": {"version": "1.0.0", "title": "Mixed API"},
+            "paths": {
+                "/a": {"get": {"operationId": "op_a", "description": long_desc}},
+                "/b": {"get": {"operationId": "op_b", "description": ""}},
+                "/c": {"get": {"operationId": "op_c", "description": "tiny"}},
+            },
+        }
+        schema_path = tmp_path / "openapi.json"
+        schema_path.write_text(json.dumps(schema))
+
+        calls: list[str] = []
+        original = mock_provider.generate
+
+        def track(prompt: str, **kw: object) -> object:
+            calls.append(prompt)
+            return original(prompt, **kw)
+
+        mock_provider.generate = track  # type: ignore[method-assign]
+        snapshot = analyze_codebase(tmp_path, [], [])
+        gen = APIEnricherGenerator(mock_provider, sample_config)
+        with patch("scripts.docgen.generators.api_enricher._OPENAPI_PATH", schema_path):
+            content, _ = gen.generate(snapshot)
+
+        enriched = json.loads(content)
+        # /a already had a long description — must be unchanged
+        assert enriched["paths"]["/a"]["get"]["description"] == long_desc
+        # /b and /c must now have non-empty descriptions
+        assert enriched["paths"]["/b"]["get"]["description"] != ""
+        assert enriched["paths"]["/c"]["get"]["description"] != ""
+        # Exactly 2 LLM calls (/b and /c)
+        assert len(calls) == 2
+
+    def test_preserves_summary_when_enriching_description(
+        self, mock_provider: MockProvider, sample_config: DocgenConfig, tmp_path: Path
+    ) -> None:
+        """Enriching description must not clobber an existing summary field."""
+        original_summary = "List all active users"
+        schema = {
+            "info": {"version": "1.0.0", "title": "Test API"},
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "list_users",
+                        "summary": original_summary,
+                        "description": "",
+                    }
+                }
+            },
+        }
+        schema_path = tmp_path / "openapi.json"
+        schema_path.write_text(json.dumps(schema))
+
+        snapshot = analyze_codebase(tmp_path, [], [])
+        gen = APIEnricherGenerator(mock_provider, sample_config)
+        with patch("scripts.docgen.generators.api_enricher._OPENAPI_PATH", schema_path):
+            content, _ = gen.generate(snapshot)
+
+        enriched = json.loads(content)
+        assert enriched["paths"]["/users"]["get"]["summary"] == original_summary
+        assert enriched["paths"]["/users"]["get"]["description"] != ""

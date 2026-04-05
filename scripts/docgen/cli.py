@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import difflib
+import itertools
 import logging
 import sys
+import threading
+import time
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Generator
 
 from scripts.docgen.analyzer.codebase import analyze_codebase
 from scripts.docgen.analyzer.hasher import compute_hash, save_hash
@@ -25,6 +31,40 @@ from scripts.docgen.providers import create_provider
 from scripts.docgen.providers.base import LLMProviderError, estimate_cost
 
 logger = logging.getLogger("docgen")
+
+_SPINNER_CHARS = itertools.cycle("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+
+
+@contextmanager
+def _spinner(label: str) -> Generator[None, None, None]:
+    """TTY-aware spinner context manager.
+
+    Shows an animated spinner on stderr when connected to a TTY.
+    Falls back to a plain "generating..." log line in non-TTY environments
+    (CI, pipes) to avoid polluting captured output.
+    """
+    if not sys.stderr.isatty():
+        logger.info("  [%s] generating...", label)
+        yield
+        return
+
+    stop_event = threading.Event()
+
+    def _spin() -> None:
+        while not stop_event.is_set():
+            sys.stderr.write(f"\r  {next(_SPINNER_CHARS)} {label} ...")
+            sys.stderr.flush()
+            time.sleep(0.1)
+
+    thread = threading.Thread(target=_spin, daemon=True)
+    thread.start()
+    try:
+        yield
+    finally:
+        stop_event.set()
+        thread.join()
+        sys.stderr.write("\r")  # clear spinner line
+        sys.stderr.flush()
 
 _GENERATORS: dict[str, type[DocGenerator]] = {
     "architecture": ArchitectureGenerator,
@@ -67,7 +107,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--dry-run", action="store_true",
-        help="Show what would be generated without writing files",
+        help="Show unified diff of what would change without writing files",
+    )
+    parser.add_argument(
+        "--diff-only", action="store_true",
+        help="Like --dry-run but exits with code 1 if any file would change (useful in CI)",
     )
     parser.add_argument(
         "--preview", action="store_true",
@@ -105,6 +149,27 @@ def _select_generators(
     if generator_filter:
         return [g.strip() for g in generator_filter.split(",") if g.strip() in _GENERATORS]
     return [name for name, enabled in config.generators.items() if enabled and name in _GENERATORS]
+
+
+def _show_diff(output_path: Path, new_content: str) -> bool:
+    """Print a unified diff between existing and new content.
+
+    Returns True if there are any differences.
+    """
+    existing_lines = output_path.read_text(encoding="utf-8").splitlines(keepends=True) if output_path.exists() else []
+    new_lines = new_content.splitlines(keepends=True)
+    diff = list(difflib.unified_diff(
+        existing_lines,
+        new_lines,
+        fromfile=f"a/{output_path}",
+        tofile=f"b/{output_path}",
+        lineterm="",
+    ))
+    if diff:
+        print("\n" + "".join(diff))
+        return True
+    print(f"  (no changes: {output_path})")
+    return False
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -157,15 +222,44 @@ def _run(args: argparse.Namespace) -> int:
                 results.append((gen_name, "cached", None, True))
                 continue
 
-        if args.dry_run:
-            logger.info("  [%s] would generate -> %s", gen_name, gen.output_path())
-            results.append((gen_name, "dry-run", None, True))
+        if args.dry_run or args.diff_only:
+            try:
+                t_start = time.monotonic()
+                with _spinner(gen_name):
+                    content, llm_response = gen.generate(snapshot)
+                elapsed = time.monotonic() - t_start
+            except LLMProviderError as exc:
+                logger.error("  [%s] provider error: %s", gen_name, exc)
+                results.append((gen_name, f"error: {exc}", None, False))
+                continue
+
+            if not content:
+                results.append((gen_name, "empty", None, True))
+                continue
+
+            existing = gen.existing_content()
+            if existing and config.merge_strategy != "overwrite":
+                content = merge_docs(existing, content, config.merge_strategy)
+
+            cost = estimate_cost(llm_response) if llm_response is not None else None
+            print(f"\n--- diff: {gen.output_path()} ---")
+            has_diff = _show_diff(gen.output_path(), content)
+            status = "would-change" if has_diff else "no-change"
+            results.append((gen_name, status, cost, False))
             continue
 
-        logger.info("  [%s] generating...", gen_name)
-
         try:
-            content, llm_response = gen.generate(snapshot)
+            t_start = time.monotonic()
+            with _spinner(gen_name):
+                content, llm_response = gen.generate(snapshot)
+            elapsed = time.monotonic() - t_start
+            tokens = (
+                (llm_response.input_tokens or 0) + (llm_response.output_tokens or 0)
+                if llm_response else 0
+            )
+            logger.info(
+                "  [%s] done (%d tokens, %.1fs)", gen_name, tokens, elapsed
+            )
         except LLMProviderError as exc:
             logger.error("  [%s] provider error: %s", gen_name, exc)
             results.append((gen_name, f"error: {exc}", None, False))
@@ -221,7 +315,12 @@ def _run(args: argparse.Namespace) -> int:
     generated = sum(1 for _, s, _, _ in results if s in ("written", "preview"))
     cached = sum(1 for _, s, _, _ in results if s == "cached")
     errors = sum(1 for _, s, _, _ in results if s.startswith("error"))
+    would_change = sum(1 for _, s, _, _ in results if s == "would-change")
     print(f"\nGenerated: {generated}, Cached: {cached}, Errors: {errors}")
+
+    if args.diff_only and would_change > 0:
+        print(f"\n{would_change} file(s) would change. Run 'make docs-gen' to update.")
+        return 1
 
     return 1 if errors > 0 else 0
 

@@ -184,8 +184,15 @@ def build_context_for_prompt(
     snapshot: CodebaseSnapshot,
     focus_paths: list[Path] | None = None,
     max_chars: int = 32000,
-) -> str:
-    """Build a condensed text representation of the codebase for LLM context."""
+) -> tuple[str, int]:
+    """Build a condensed text representation of the codebase for LLM context.
+
+    Returns:
+        A tuple of (context_string, omitted_file_count). ``omitted_file_count``
+        is the number of files that were not included due to the ``max_chars``
+        limit. Callers should surface this to users so they know analysis was
+        partial.
+    """
     sections: list[str] = []
 
     # Summary
@@ -215,9 +222,11 @@ def build_context_for_prompt(
     current_chars = sum(len(s) for s in sections)
     sections.append("## Key Files\n")
 
-    for path in prioritized:
+    omitted = 0
+    for idx, path in enumerate(prioritized):
         if current_chars >= max_chars:
-            sections.append(f"\n... (context truncated at {max_chars} chars)")
+            omitted = len(prioritized) - idx
+            sections.append(f"\n... ({omitted} files omitted — context limit {max_chars} chars reached)")
             break
 
         content = read_file_content(path, max_lines=100)
@@ -228,4 +237,4 @@ def build_context_for_prompt(
         current_chars += len(header)
         sections.append(header)
 
-    return "\n".join(sections)
+    return "\n".join(sections), omitted

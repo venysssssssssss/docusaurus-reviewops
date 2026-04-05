@@ -23,7 +23,6 @@ ROOT = Path(__file__).parent.parent
 CHECKS: list[dict] = []
 ISSUES: list[str] = []
 WARNINGS: list[str] = []
-PLACEHOLDER_FIXES: list[tuple[str, str, str]] = []  # (placeholder, description, example)
 
 
 def check(name: str, passed: bool, message: str) -> None:
@@ -65,11 +64,16 @@ _DOCUSAURUS_PLACEHOLDERS: dict[str, tuple[str, str]] = {
 }
 
 
-def check_docusaurus_config() -> None:
+def check_docusaurus_config() -> list[tuple[str, str, str]]:
+    """Verifica placeholders no docusaurus.config.ts.
+
+    Returns:
+        Lista de tuplas (placeholder, descricao, exemplo) que precisam ser substituidos.
+    """
     config_path = ROOT / "docs-site" / "docusaurus.config.ts"
     if not config_path.exists():
         check("docusaurus.config.ts", False, "Arquivo nao encontrado")
-        return
+        return []
 
     content = config_path.read_text()
 
@@ -84,9 +88,10 @@ def check_docusaurus_config() -> None:
             False,
             f"Encontrados {len(found)} placeholder(s) — veja guia abaixo",
         )
-        PLACEHOLDER_FIXES.extend(found)
     else:
         check("Placeholders docusaurus.config.ts", True, "Todos substituidos")
+
+    return found
 
     # Verifica TODOs
     todos = [line.strip() for line in content.splitlines() if "TODO:" in line]
@@ -201,7 +206,7 @@ def main() -> None:
     check_file_structure()
     check_lockfile()
     check_codeowners()
-    check_docusaurus_config()
+    placeholder_fixes = check_docusaurus_config()
     check_openapi_export()
 
     # Resultados
@@ -219,10 +224,10 @@ def main() -> None:
         for w in WARNINGS:
             print(w)
 
-    if PLACEHOLDER_FIXES:
-        print(f"\nGuia de substituicao de placeholders ({len(PLACEHOLDER_FIXES)} itens):")
+    if placeholder_fixes:
+        print(f"\nGuia de substituicao de placeholders ({len(placeholder_fixes)} itens):")
         print("  Arquivo: docs-site/docusaurus.config.ts\n")
-        for placeholder, description, example in PLACEHOLDER_FIXES:
+        for placeholder, description, example in placeholder_fixes:
             print(f"  Substituir : {placeholder}")
             print(f"  Campo      : {description}")
             print(f"  Exemplo    : {example}")

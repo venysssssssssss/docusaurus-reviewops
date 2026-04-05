@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.docgen.analyzer.codebase import build_context_for_prompt
 from scripts.docgen.generators.base import DocGenerator
+
+logger = logging.getLogger(__name__)
 from scripts.docgen.output.formatter import sanitize_llm_output
 from scripts.docgen.prompts.templates import render_template
 
@@ -46,7 +49,12 @@ class ArchitectureGenerator(DocGenerator):
         ]
 
     def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
-        context = build_context_for_prompt(snapshot, self.relevant_paths(snapshot))
+        context, omitted = build_context_for_prompt(snapshot, self.relevant_paths(snapshot))
+        if omitted:
+            logger.warning(
+                "[architecture] context limit reached: %d file(s) omitted from analysis",
+                omitted,
+            )
         existing = self.existing_content()
 
         prompt = render_template(

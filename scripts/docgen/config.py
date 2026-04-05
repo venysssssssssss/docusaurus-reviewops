@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+import difflib
+import logging
 import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+
+logger = logging.getLogger(__name__)
+
+_KNOWN_TOP_LEVEL_KEYS = frozenset({
+    "provider", "model", "anthropic", "openai", "ollama", "claude_code",
+    "generators", "output", "cache", "analyze",
+})
 
 _ENV_PATTERN = re.compile(r"\$\{(\w+)\}")
 
@@ -141,9 +150,31 @@ def load_config(
         try:
             with open(config_path, encoding="utf-8") as f:
                 file_data = yaml.safe_load(f) or {}
+            # Warn about unrecognised top-level keys and suggest corrections
+            for key in file_data:
+                if key not in _KNOWN_TOP_LEVEL_KEYS:
+                    suggestions = difflib.get_close_matches(
+                        key, _KNOWN_TOP_LEVEL_KEYS, n=1, cutoff=0.6
+                    )
+                    hint = f" — did you mean '{suggestions[0]}'?" if suggestions else ""
+                    logger.warning(
+                        "%s: unknown key '%s'%s (will be ignored)",
+                        config_path, key, hint,
+                    )
             raw = _deep_merge(raw, file_data)
-        except yaml.YAMLError:
-            pass  # Invalid YAML — fall back to defaults
+        except yaml.YAMLError as exc:
+            # Surface file path + line/column from problem_mark for actionable errors
+            mark = getattr(exc, "problem_mark", None)
+            location = (
+                f"{config_path}:{mark.line + 1}:{mark.column + 1}"
+                if mark is not None
+                else str(config_path)
+            )
+            problem = getattr(exc, "problem", str(exc))
+            logger.warning(
+                "YAML parse error in %s: %s — using defaults",
+                location, problem,
+            )
 
     if overrides:
         raw = _deep_merge(raw, overrides)

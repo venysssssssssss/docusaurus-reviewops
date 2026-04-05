@@ -74,14 +74,22 @@ class TestReadFileContent:
 class TestBuildContext:
     def test_produces_context_string(self, sample_codebase: Path) -> None:
         snapshot = analyze_codebase(sample_codebase, include=["src/"], exclude=[])
-        context = build_context_for_prompt(snapshot)
+        context, omitted = build_context_for_prompt(snapshot)
         assert "Codebase Summary" in context
         assert "Directory Tree" in context
+        assert isinstance(omitted, int)
+        assert omitted >= 0
 
     def test_respects_max_chars(self, sample_codebase: Path) -> None:
         snapshot = analyze_codebase(sample_codebase, include=[], exclude=[])
-        context = build_context_for_prompt(snapshot, max_chars=200)
+        context, omitted = build_context_for_prompt(snapshot, max_chars=200)
         assert len(context) < 1000  # some overhead for truncation message
+
+    def test_reports_omitted_count_when_truncated(self, sample_codebase: Path) -> None:
+        """Omitted count must be positive when context limit is very small."""
+        snapshot = analyze_codebase(sample_codebase, include=[], exclude=[])
+        _context, omitted = build_context_for_prompt(snapshot, max_chars=100)
+        assert omitted > 0
 
 
 class TestHasher:

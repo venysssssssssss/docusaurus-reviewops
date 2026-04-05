@@ -26,9 +26,11 @@ class TestArchitectureGenerator:
     ) -> None:
         gen = ArchitectureGenerator(mock_provider, sample_config)
         snapshot = analyze_codebase(sample_codebase, ["src/", "scripts/"], [])
-        content = gen.generate(snapshot)
+        content, response = gen.generate(snapshot)
         assert len(content) > 0
         assert "Architecture" in content
+        assert response is not None
+        assert response.provider == "mock"
 
     def test_relevant_paths(
         self, mock_provider: MockProvider, sample_config: DocgenConfig, sample_codebase: Path

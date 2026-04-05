@@ -13,6 +13,7 @@ from scripts.docgen.prompts.templates import render_template
 
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
+    from scripts.docgen.providers.base import LLMResponse
 
 _SYSTEM_PROMPT = (
     "You are a technical writer. Generate a clean changelog entry "
@@ -43,12 +44,12 @@ class ChangelogGenerator(DocGenerator):
             if f.path.name == "pyproject.toml"
         ]
 
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
         latest_tag = get_latest_tag()
         commits = get_commits(since_tag=latest_tag, limit=100)
 
         if not commits:
-            return ""  # Nothing to document
+            return "", None  # Nothing to document
 
         commits_content = "\n".join(
             f"- {c.sha[:8]} {c.message} (by {c.author}, {c.date[:10]})"
@@ -79,4 +80,4 @@ class ChangelogGenerator(DocGenerator):
         )
 
         response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
-        return sanitize_llm_output(response.content)
+        return sanitize_llm_output(response.content), response

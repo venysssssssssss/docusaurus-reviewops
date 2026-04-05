@@ -13,6 +13,7 @@ from scripts.docgen.prompts.templates import render_template
 
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
+    from scripts.docgen.providers.base import LLMResponse
 
 _SYSTEM_PROMPT = (
     "You are a senior software architect. Generate an Architecture Decision Record "
@@ -66,13 +67,13 @@ class ADRGenerator(DocGenerator):
             return "(No existing ADRs)"
         return "\n".join(f"- {p.name}" for p in adrs)
 
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
         latest_tag = get_latest_tag()
         commits = get_commits(since_tag=latest_tag, limit=50)
         significant = get_significant_changes(commits, threshold=5)
 
         if not significant and not commits:
-            return ""  # Nothing to document
+            return "", None  # Nothing to document
 
         changes_summary = "\n".join(
             f"- [{c.sha[:8]}] {c.message} ({c.files_changed} files, "
@@ -102,4 +103,4 @@ class ADRGenerator(DocGenerator):
         )
 
         response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
-        return sanitize_llm_output(response.content)
+        return sanitize_llm_output(response.content), response

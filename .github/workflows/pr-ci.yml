@@ -3,7 +3,7 @@ name: Pull Request CI
 on:
   pull_request:
     branches:
-      - main
+      - master
     types:
       - opened
       - synchronize
@@ -46,16 +46,16 @@ jobs:
         run: pip install poetry==2.1.3
 
       - name: Install backend dependencies
-        run: poetry install --no-interaction --no-root
+        run: poetry install --no-interaction --no-root --with dev
 
       - name: Lint (ruff)
         run: poetry run ruff check .
 
       - name: Syntax check
-        run: poetry run python -m compileall src tests
+        run: poetry run python -m compileall src tests scripts .github/scripts
 
       - name: Type check (mypy)
-        run: poetry run mypy src
+        run: PYTHONPATH=. poetry run mypy src .github/scripts scripts
 
       - name: Tests
         run: |
@@ -108,7 +108,7 @@ jobs:
         run: pip install poetry==2.1.3
 
       - name: Install backend dependencies
-        run: poetry install --no-interaction --no-root
+        run: poetry install --no-interaction --no-root --with dev
 
       - name: Install docs dependencies
         run: pnpm --dir docs-site install --frozen-lockfile

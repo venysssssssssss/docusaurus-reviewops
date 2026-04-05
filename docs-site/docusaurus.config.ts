@@ -1,27 +1,17 @@
-// CONFIGURACAO DO PORTAL DOCUSAURUS
-// Substitua os placeholders marcados com TODO antes de publicar.
-
 import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 import type * as OpenApiPlugin from "docusaurus-plugin-openapi-docs";
 
 const config: Config = {
-  // TODO: Substitua pelo nome do seu portal
-  title: "Engineering Docs",
-  // TODO: Substitua pelo tagline da sua empresa/produto
+  title: "docusaurus-reviewops",
   tagline: "Documentacao viva de produto, plataforma e operacao",
   favicon: "img/favicon.svg",
 
-  // TODO: Substitua pelo dominio do GitHub Pages da sua org
-  // Ex: "https://minha-org.github.io"
-  url: "https://example.github.io",
-  // TODO: Substitua pelo nome do repositorio (ou "/" se for org page)
-  baseUrl: "/engineering-docs/",
+  url: "https://venysssssssssss.github.io",
+  baseUrl: "/docusaurus-reviewops/",
 
-  // TODO: Substitua pelo nome da organizacao no GitHub
-  organizationName: "example",
-  // TODO: Substitua pelo nome do repositorio no GitHub
-  projectName: "engineering-docs",
+  organizationName: "venysssssssssss",
+  projectName: "docusaurus-reviewops",
 
   onBrokenLinks: "throw",
   markdown: {
@@ -46,8 +36,8 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Plugin OpenAPI gera docs automaticamente
           docItemComponent: "@theme/ApiItem",
-          // TODO: Substitua pela URL do seu repositorio
-          editUrl: "https://github.com/example/repo/tree/main/docs-site/",
+          editUrl:
+            "https://github.com/venysssssssssss/docusaurus-reviewops/tree/master/docs-site/",
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
           // Versionamento sera configurado apos o primeiro docs:version.
@@ -99,9 +89,6 @@ const config: Config = {
         docsRouteBasePath: "/",
       },
     ],
-    // Para otimizacao de imagens, instale @docusaurus/plugin-ideal-image
-    // e descomente a config abaixo (requer build nativo do sharp):
-    // ["@docusaurus/plugin-ideal-image", { quality: 85, max: 1200, min: 400 }],
   ],
 
   themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
@@ -114,23 +101,12 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
 
-    // Banner informativo — remova apos configurar os placeholders
-    announcementBar: {
-      id: "setup-notice",
-      content:
-        "Portal em construcao — substitua os <strong>placeholders TODO</strong> antes de publicar. Execute <code>make validate</code> para verificar.",
-      backgroundColor: "#2e86ab",
-      textColor: "#fff",
-      isCloseable: true,
-    },
-
     metadata: [
       { name: "keywords", content: "documentacao, API, arquitetura, engenharia" },
     ],
 
     navbar: {
-      // TODO: Substitua pelo titulo do portal
-      title: "Engineering Docs",
+      title: "docusaurus-reviewops",
       items: [
         { to: "/", label: "Home", position: "left" },
         {
@@ -148,8 +124,7 @@ const config: Config = {
         // Dropdown de versoes — aparece apos o primeiro freeze de versao
         { type: "docsVersionDropdown", position: "right" },
         {
-          // TODO: Substitua pela URL do seu repositorio
-          href: "https://github.com/example/repo",
+          href: "https://github.com/venysssssssssss/docusaurus-reviewops",
           label: "GitHub",
           position: "right",
         },
@@ -167,9 +142,25 @@ const config: Config = {
             { label: "API", to: "/api/core/api" },
           ],
         },
+        {
+          title: "Repositorio",
+          items: [
+            {
+              label: "GitHub",
+              href: "https://github.com/venysssssssssss/docusaurus-reviewops",
+            },
+            {
+              label: "Issues",
+              href: "https://github.com/venysssssssssss/docusaurus-reviewops/issues",
+            },
+            {
+              label: "Changelog",
+              to: "https://github.com/venysssssssssss/docusaurus-reviewops/blob/master/CHANGELOG.md",
+            },
+          ],
+        },
       ],
-      // TODO: Substitua pelo nome da empresa
-      copyright: `Copyright © ${new Date().getFullYear()} Example Corp`,
+      copyright: `Copyright © ${new Date().getFullYear()} venysssssssssss — MIT License`,
     },
   } satisfies Preset.ThemeConfig,
 };

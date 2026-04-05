@@ -22,7 +22,7 @@ from scripts.docgen.generators.standards import StandardsGenerator
 from scripts.docgen.output.merger import merge_docs
 from scripts.docgen.output.writer import write_doc
 from scripts.docgen.providers import create_provider
-from scripts.docgen.providers.base import LLMProviderError
+from scripts.docgen.providers.base import LLMProviderError, estimate_cost
 
 logger = logging.getLogger("docgen")
 
@@ -165,7 +165,7 @@ def _run(args: argparse.Namespace) -> int:
         logger.info("  [%s] generating...", gen_name)
 
         try:
-            content = gen.generate(snapshot)
+            content, llm_response = gen.generate(snapshot)
         except LLMProviderError as exc:
             logger.error("  [%s] provider error: %s", gen_name, exc)
             results.append((gen_name, f"error: {exc}", None, False))
@@ -181,9 +181,7 @@ def _run(args: argparse.Namespace) -> int:
         if existing and config.merge_strategy != "overwrite":
             content = merge_docs(existing, content, config.merge_strategy)
 
-        # Estimate cost
-        # (we'd need the response for this, but generators return content not response)
-        cost = None
+        cost = estimate_cost(llm_response) if llm_response is not None else None
 
         if args.preview:
             print(f"\n{'=' * 60}")
@@ -212,10 +210,13 @@ def _run(args: argparse.Namespace) -> int:
             results.append((gen_name, "written", cost, False))
 
     # Summary
+    total_cost = sum(c for _, _, c, _ in results if c is not None)
     print("\n--- docgen summary ---")
     for name, status, cost, _skipped in results:
-        cost_str = f" (~${cost:.4f})" if cost else ""
+        cost_str = f" (~${cost:.4f})" if cost is not None else ""
         print(f"  {name:20s} {status}{cost_str}")
+    if total_cost > 0:
+        print(f"\nTotal estimated cost: ~${total_cost:.4f}")
 
     generated = sum(1 for _, s, _, _ in results if s in ("written", "preview"))
     cached = sum(1 for _, s, _, _ in results if s == "cached")

@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout default branch (main)
+      - name: Checkout default branch (master)
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: master
           fetch-depth: 0
 
       - name: Setup Python 3.12
@@ -88,7 +88,7 @@ jobs:
           gh pr create \
             --title "docs: freeze version ${VERSION_CLEAN}" \
             --head "$BRANCH" \
-            --base main \
+            --base master \
             --body "$(cat <<'BODY'
           PR automatizado para congelar a fotografia documental da release **${VERSION_CLEAN}**.
 

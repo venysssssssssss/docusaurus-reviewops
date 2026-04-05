@@ -12,6 +12,7 @@ from scripts.docgen.prompts.templates import render_template
 
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
+    from scripts.docgen.providers.base import LLMResponse
 
 _SYSTEM_PROMPT = (
     "You are a senior DevOps engineer. Generate a practical deploy runbook "
@@ -42,7 +43,7 @@ class RunbookGenerator(DocGenerator):
                 relevant.append(f.path)
         return relevant
 
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
         # Collect workflow contents
         workflow_parts: list[str] = []
         makefile_content = ""
@@ -69,4 +70,4 @@ class RunbookGenerator(DocGenerator):
         )
 
         response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
-        return sanitize_llm_output(response.content)
+        return sanitize_llm_output(response.content), response

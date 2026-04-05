@@ -115,3 +115,51 @@ class TestDocsGuardrailsFail:
             with pytest.raises(SystemExit) as exc:
                 guardrails.main()
             assert exc.value.code == 1
+
+    def test_large_change_with_only_changelog_fails(self, guardrails: types.ModuleType) -> None:
+        """Mudanca grande (>3 arquivos publicos) com apenas CHANGELOG = falha."""
+        files = [
+            "src/a.py", "src/b.py", "src/c.py", "src/d.py",  # 4 public files
+            "CHANGELOG.md",  # only generic doc
+        ]
+        with patch.object(guardrails, "changed_files", return_value=files):
+            with pytest.raises(SystemExit) as exc:
+                guardrails.main()
+            assert exc.value.code == 1
+
+    def test_large_change_with_only_readme_fails(self, guardrails: types.ModuleType) -> None:
+        """Mudanca grande com apenas README = falha."""
+        files = [
+            "src/a.py", "src/b.py", "src/c.py", "src/d.py",
+            "README.md",
+        ]
+        with patch.object(guardrails, "changed_files", return_value=files):
+            with pytest.raises(SystemExit) as exc:
+                guardrails.main()
+            assert exc.value.code == 1
+
+
+class TestDocsGuardrailsLargeChangePass:
+    def test_large_change_with_specific_docs_passes(self, guardrails: types.ModuleType) -> None:
+        """Mudanca grande + docs-site/docs/ = OK."""
+        files = [
+            "src/a.py", "src/b.py", "src/c.py", "src/d.py",
+            "docs-site/docs/architecture/overview.md",
+        ]
+        with patch.object(guardrails, "changed_files", return_value=files):
+            guardrails.main()  # should not raise
+
+    def test_large_change_with_docs_dir_passes(self, guardrails: types.ModuleType) -> None:
+        """Mudanca grande + docs/ dir = OK."""
+        files = [
+            "src/a.py", "src/b.py", "src/c.py", "src/d.py",
+            "docs/ARCHITECTURE.md",
+        ]
+        with patch.object(guardrails, "changed_files", return_value=files):
+            guardrails.main()
+
+    def test_small_change_with_only_changelog_passes(self, guardrails: types.ModuleType) -> None:
+        """Mudanca pequena (<=3 arquivos) com CHANGELOG = OK."""
+        files = ["src/a.py", "src/b.py", "CHANGELOG.md"]  # 2 public files, under threshold
+        with patch.object(guardrails, "changed_files", return_value=files):
+            guardrails.main()

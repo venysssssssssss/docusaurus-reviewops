@@ -4,6 +4,14 @@ Guardrail de freshness de documentacao.
 Falha o PR CI se codigo publico foi alterado mas nenhum caminho de documentacao
 foi tocado. Isso garante que docs nascem junto com o produto, nao depois.
 
+Politica de relevancia:
+  - Mudancas pequenas (<=3 arquivos publicos): qualquer doc touch satisfaz
+    (CHANGELOG.md, README.md, docs-site/docs/, etc.)
+  - Mudancas grandes (>3 arquivos publicos): exige ao menos 1 arquivo em
+    docs-site/docs/ ou docs/ — nao e suficiente apenas tocar CHANGELOG/README.
+    Isso previne o bypass trivial de adicionar uma linha em CHANGELOG.md para
+    satisfazer a politica em mudancas substanciais de funcionalidade.
+
 Customizacao: ajuste PUBLIC_CHANGE_PREFIXES e DOC_TOUCH_PREFIXES conforme
 a estrutura do seu repositorio.
 
@@ -30,13 +38,19 @@ PUBLIC_CHANGE_PREFIXES: list[str] = [
     "openapi/",
 ]
 
-# Prefixos/nomes que representam documentacao curada
+# Prefixos/nomes que representam documentacao curada (qualquer tamanho de PR)
 DOC_TOUCH_PREFIXES: list[str] = [
     "docs-site/docs/",
     "docs-site/openapi/",
     "docs/",
     "README.md",
     "CHANGELOG.md",
+]
+
+# Prefixos de documentacao especifica (exigida em PRs grandes)
+SPECIFIC_DOC_PREFIXES: list[str] = [
+    "docs-site/docs/",
+    "docs/",
 ]
 
 # Prefixos ignorados ao classificar codigo publico
@@ -47,6 +61,9 @@ IGNORED_CODE_PREFIXES: list[str] = [
     ".github/",
     "scripts/",
 ]
+
+# Threshold: acima deste numero de arquivos publicos alterados, exige doc especifica
+LARGE_CHANGE_THRESHOLD: int = 3
 
 # ---------------------------------------------------------------------------
 # Logica principal
@@ -77,7 +94,18 @@ def main() -> None:
         if any(f == prefix or f.startswith(prefix) for prefix in DOC_TOUCH_PREFIXES)
     ]
 
-    if public_changes and not doc_changes:
+    specific_doc_changes = [
+        f
+        for f in doc_changes
+        if any(f.startswith(prefix) for prefix in SPECIFIC_DOC_PREFIXES)
+    ]
+
+    if not public_changes:
+        print("Politica de freshness de documentacao: OK (sem mudancas em codigo publico)")
+        return
+
+    # Nenhum doc foi tocado — falha sempre
+    if not doc_changes:
         print("FALHA: codigo publico alterado mas nenhum caminho de documentacao foi tocado.")
         print("Arquivos publicos alterados:")
         for item in public_changes:
@@ -91,10 +119,28 @@ def main() -> None:
         )
         sys.exit(1)
 
+    # Mudanca grande: exige documentacao especifica (nao apenas CHANGELOG/README)
+    is_large_change = len(public_changes) > LARGE_CHANGE_THRESHOLD
+    if is_large_change and not specific_doc_changes:
+        print(
+            f"FALHA: {len(public_changes)} arquivos publicos alterados (> {LARGE_CHANGE_THRESHOLD}) "
+            "mas apenas documentacao generica foi tocada (CHANGELOG.md / README.md)."
+        )
+        print(
+            "Mudancas substanciais de funcionalidade exigem atualizacao em "
+            "docs-site/docs/ ou docs/."
+        )
+        print("Arquivos publicos alterados:")
+        for item in public_changes:
+            print(f"  - {item}")
+        print(
+            "\nSUGESTAO: execute 'make docs-gen' para gerar documentacao automaticamente via LLM."
+        )
+        sys.exit(1)
+
     print("Politica de freshness de documentacao: OK")
-    if public_changes:
-        print(f"  Arquivos publicos alterados: {len(public_changes)}")
-        print(f"  Docs tocados: {len(doc_changes)}")
+    print(f"  Arquivos publicos alterados: {len(public_changes)}")
+    print(f"  Docs tocados: {len(doc_changes)} ({len(specific_doc_changes)} especificos)")
 
 
 if __name__ == "__main__":

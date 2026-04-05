@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import urllib.request
+from typing import NoReturn
 from urllib.error import HTTPError
 
 # ---------------------------------------------------------------------------
@@ -74,7 +75,7 @@ def _headers() -> dict[str, str]:
     }
 
 
-def api_request(method: str, path: str, payload: dict | None = None) -> object:
+def api_request(method: str, path: str, payload: dict | None = None) -> dict | list | None:
     req = urllib.request.Request(
         f"{API}{path}",
         method=method,
@@ -108,7 +109,7 @@ def paginate(path: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def fail_closed(reason: str) -> None:
+def fail_closed(reason: str) -> NoReturn:
     """Encerra sem registrar aprovacao. Ausencia de aprovacao e parte da politica."""
     print(f"[policy] nao elegivel: {reason}")
     sys.exit(0)

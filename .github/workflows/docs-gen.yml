@@ -2,7 +2,7 @@ name: Docs Generation Suggestions
 
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - 'src/**'
       - 'app/**'
@@ -68,8 +68,19 @@ jobs:
             const fs = require('fs');
             const suggestionsPath = '/tmp/docgen-suggestions.txt';
             if (!fs.existsSync(suggestionsPath)) return;
-            const suggestions = fs.readFileSync(suggestionsPath, 'utf8').trim();
+            let suggestions = fs.readFileSync(suggestionsPath, 'utf8').trim();
             if (!suggestions) return;
+
+            // Truncate to prevent extremely large comments (GitHub limit: 65536 chars)
+            const MAX_LEN = 8000;
+            if (suggestions.length > MAX_LEN) {
+              suggestions = suggestions.slice(0, MAX_LEN) + '\n\n... (truncated)';
+            }
+
+            // Escape backtick sequences that could break the code block fence.
+            // Any occurrence of ``` in the output is replaced with a zero-width
+            // space between the backticks so the fence cannot be prematurely closed.
+            suggestions = suggestions.replace(/```/g, '`\u200B`\u200B`');
 
             // Delete previous bot comment if exists
             const { data: comments } = await github.rest.issues.listComments({

@@ -3,6 +3,29 @@
 Todas as mudancas relevantes deste projeto serao documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [0.3.0] - 2026-04-04
+
+### Adicionado
+
+- Sistema `docgen` — gerador de documentacao via LLM com 5 providers: Ollama (local),
+  Anthropic Claude, OpenAI, Claude Code CLI e Mock (testes)
+- 6 generators: architecture, coding standards, runbook, ADR, changelog, API enricher
+- Cache incremental por SHA256 (`.docgen-cache/`) — evita chamadas LLM desnecessarias
+- Cost tracking real: tokens LLM capturados e custo calculado via `estimate_cost()`,
+  exibido no sumario do CLI (`~$0.04`)
+- `make docs-gen` e `make docs-gen-preview` no Makefile
+- `.docgen.yml` com interpolacao de env vars (`${ANTHROPIC_API_KEY}`)
+- Workflow advisory-only `docs-gen.yml` — posta sugestoes como comentario de PR, nunca bloqueia
+- Validacao de markdown Docusaurus-compativel (frontmatter, admonitions, code fences, sem TODO)
+- 22 novos testes para ADR, Changelog, APIEnricher, Standards e Runbook generators
+- Estrategia de merge `preserve` como padrao — nunca sobrescreve conteudo humano
+
+### Corrigido
+
+- Mypy: erro "source file found twice" em `git_history.py` — adicionado `scripts/__init__.py`
+  para tornar `scripts/` um pacote Python proprio
+- `types-pyyaml` adicionado como dep de desenvolvimento para cobertura mypy completa
+
 ## [0.2.0] - 2026-04-04
 
 ### Adicionado

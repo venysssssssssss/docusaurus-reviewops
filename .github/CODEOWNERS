@@ -1,31 +1,30 @@
 # CODEOWNERS — docusaurus-reviewops
-# Substitua @org/team pelos handles reais da sua organizacao.
 # Documentacao oficial: https://docs.github.com/articles/about-code-owners
 
-# Default: todos os arquivos exigem revisao do time de backend
-*                               @org/backend-platform
+# Default: todos os arquivos exigem revisao do owner do repositorio
+*                               @venysssssssssss
 
 # CI/CD e politica do repositorio — nunca auto-approve
-/.github/                       @org/platform-engineering @org/security
-/.github/workflows/             @org/platform-engineering @org/security
+/.github/                       @venysssssssssss
+/.github/workflows/             @venysssssssssss
 
 # Infraestrutura — nunca auto-approve
-/infra/                         @org/platform-engineering
-/terraform/                     @org/platform-engineering
-/helm/                          @org/platform-engineering
-Dockerfile*                     @org/platform-engineering
+/infra/                         @venysssssssssss
+/terraform/                     @venysssssssssss
+/helm/                          @venysssssssssss
+Dockerfile*                     @venysssssssssss
 
 # Banco de dados e migracoes — nunca auto-approve
-/migrations/                    @org/data-platform @org/backend-platform
-/alembic/                       @org/data-platform @org/backend-platform
+/migrations/                    @venysssssssssss
+/alembic/                       @venysssssssssss
 
 # Codigo da aplicacao — elegivel para auto-approve se gates green
-/src/                           @org/backend-platform
+/src/                           @venysssssssssss
 
 # Contratos publicos OpenAPI — human-in-the-loop em breaking changes
-/openapi/                       @org/backend-platform @org/tech-writers
+/openapi/                       @venysssssssssss
 
 # Portal de documentacao
-/docs-site/docusaurus.config.ts @org/tech-writers @org/platform-engineering
-/docs-site/sidebars.ts          @org/tech-writers
-/docs-site/docs/                @org/tech-writers
+/docs-site/docusaurus.config.ts @venysssssssssss
+/docs-site/sidebars.ts          @venysssssssssss
+/docs-site/docs/                @venysssssssssss

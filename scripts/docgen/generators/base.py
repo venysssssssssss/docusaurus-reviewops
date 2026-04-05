@@ -11,7 +11,7 @@ from scripts.docgen.analyzer.hasher import has_changed
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
     from scripts.docgen.config import DocgenConfig
-    from scripts.docgen.providers.base import LLMProvider
+    from scripts.docgen.providers.base import LLMProvider, LLMResponse
 
 
 class DocGenerator(ABC):
@@ -36,8 +36,11 @@ class DocGenerator(ABC):
         """Return paths this generator cares about (for incremental hashing)."""
 
     @abstractmethod
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
-        """Generate markdown document from codebase analysis."""
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
+        """Generate markdown document from codebase analysis.
+
+        Returns (content, response). Response carries token counts for cost tracking.
+        """
 
     def should_run(self, snapshot: CodebaseSnapshot) -> bool:
         """Check if generation is needed (cache check)."""

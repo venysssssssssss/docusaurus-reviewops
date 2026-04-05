@@ -16,6 +16,7 @@ ruff = "^0.9"
 pytest = "^8.3"
 mypy = "^1.15"
 pytest-mock = "^3.14"
+types-pyyaml = "^6.0"
 
 [tool.poetry.scripts]
 export-openapi = "scripts.export_openapi:main"

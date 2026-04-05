@@ -23,6 +23,7 @@ ROOT = Path(__file__).parent.parent
 CHECKS: list[dict] = []
 ISSUES: list[str] = []
 WARNINGS: list[str] = []
+PLACEHOLDER_FIXES: list[tuple[str, str, str]] = []  # (placeholder, description, example)
 
 
 def check(name: str, passed: bool, message: str) -> None:
@@ -39,6 +40,31 @@ def warn(message: str) -> None:
 # 1. Placeholders no docusaurus.config.ts
 # ---------------------------------------------------------------------------
 
+# Maps placeholder → (description, example replacement)
+_DOCUSAURUS_PLACEHOLDERS: dict[str, tuple[str, str]] = {
+    "example.github.io": (
+        "URL do GitHub Pages (url)",
+        "sua-org.github.io",
+    ),
+    '"example"': (
+        "organizationName (nome da org no GitHub)",
+        '"sua-org"',
+    ),
+    '"engineering-docs"': (
+        "projectName (nome do repositorio)",
+        '"seu-repositorio"',
+    ),
+    "Example Corp": (
+        "Copyright — nome da empresa",
+        "Sua Empresa Ltda.",
+    ),
+    "github.com/example/repo": (
+        "editUrl — URL do repositorio para editar docs",
+        "github.com/sua-org/seu-repositorio",
+    ),
+}
+
+
 def check_docusaurus_config() -> None:
     config_path = ROOT / "docs-site" / "docusaurus.config.ts"
     if not config_path.exists():
@@ -47,25 +73,18 @@ def check_docusaurus_config() -> None:
 
     content = config_path.read_text()
 
-    placeholders = {
-        "example.github.io": "URL do GitHub Pages",
-        "example": "organizationName",
-        '"engineering-docs"': "projectName",
-        "Example Corp": "Nome da empresa no copyright",
-        "github.com/example/repo": "URL do repositorio",
-    }
-
-    found = []
-    for placeholder, description in placeholders.items():
+    found: list[tuple[str, str, str]] = []
+    for placeholder, (description, example) in _DOCUSAURUS_PLACEHOLDERS.items():
         if placeholder in content:
-            found.append(f"{placeholder} ({description})")
+            found.append((placeholder, description, example))
 
     if found:
         check(
             "Placeholders docusaurus.config.ts",
             False,
-            f"Encontrados {len(found)} placeholder(s): {', '.join(found)}",
+            f"Encontrados {len(found)} placeholder(s) — veja guia abaixo",
         )
+        PLACEHOLDER_FIXES.extend(found)
     else:
         check("Placeholders docusaurus.config.ts", True, "Todos substituidos")
 
@@ -200,8 +219,17 @@ def main() -> None:
         for w in WARNINGS:
             print(w)
 
+    if PLACEHOLDER_FIXES:
+        print(f"\nGuia de substituicao de placeholders ({len(PLACEHOLDER_FIXES)} itens):")
+        print("  Arquivo: docs-site/docusaurus.config.ts\n")
+        for placeholder, description, example in PLACEHOLDER_FIXES:
+            print(f"  Substituir : {placeholder}")
+            print(f"  Campo      : {description}")
+            print(f"  Exemplo    : {example}")
+            print()
+
     if ISSUES:
-        print(f"\nProblemas ({len(ISSUES)}):")
+        print(f"Problemas ({len(ISSUES)}):")
         for issue in ISSUES:
             print(issue)
         print("\nCorreja os problemas acima antes de habilitar os workflows.")

@@ -12,7 +12,7 @@ from scripts.docgen.output.formatter import sanitize_llm_output
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
     from scripts.docgen.config import DocgenConfig
-    from scripts.docgen.providers.base import LLMProvider
+    from scripts.docgen.providers.base import LLMProvider, LLMResponse
 
 _OPENAPI_PATH = Path("docs-site/openapi/openapi.json")
 
@@ -77,13 +77,14 @@ class APIEnricherGenerator(DocGenerator):
         except (json.JSONDecodeError, OSError):
             return None
 
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
         schema = self._load_schema()
         if schema is None:
-            return ""  # No valid schema to enrich
+            return "", None  # No valid schema to enrich
 
         paths = schema.get("paths", {})
         enriched = False
+        last_response: LLMResponse | None = None
 
         for path_str, methods in paths.items():
             for method, operation in methods.items():
@@ -108,14 +109,14 @@ class APIEnricherGenerator(DocGenerator):
                     parameters=params_str,
                 )
 
-                response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
-                new_desc = sanitize_llm_output(response.content).strip()
+                last_response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
+                new_desc = sanitize_llm_output(last_response.content).strip()
 
                 if new_desc:
                     operation["description"] = new_desc
                     enriched = True
 
         if not enriched:
-            return ""
+            return "", None
 
-        return json.dumps(schema, indent=2, ensure_ascii=False)
+        return json.dumps(schema, indent=2, ensure_ascii=False), last_response

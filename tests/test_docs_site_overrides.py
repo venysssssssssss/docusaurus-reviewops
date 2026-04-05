@@ -115,11 +115,14 @@ def test_config_has_search_plugin() -> None:
     assert "docusaurus-search-local" in source
 
 
-def test_config_has_announcement_bar() -> None:
+def test_config_has_real_org_values() -> None:
+    """Config deve ter valores reais do repositorio (sem placeholders de exemplo)."""
     source = read_text(DOCS_SITE / "docusaurus.config.ts")
 
-    assert "announcementBar" in source
-    assert "isCloseable: true" in source
+    assert "venysssssssssss" in source
+    assert "docusaurus-reviewops" in source
+    assert "example.github.io" not in source
+    assert "Example Corp" not in source
 
 
 def test_config_has_color_mode_respect() -> None:

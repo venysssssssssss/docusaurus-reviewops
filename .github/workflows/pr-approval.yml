@@ -34,11 +34,11 @@ jobs:
 
       # CRITICO: Nunca fazer checkout do codigo do PR aqui.
       # Este workflow opera apenas com metadados do evento e chamadas a API REST.
-      # O checkout abaixo e do branch default (main) — nao do PR.
+      # O checkout abaixo e do branch default (master) — nao do PR.
       - name: Checkout default branch (scripts only)
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: master
           persist-credentials: false
 
       - name: Resolve PR number from workflow_run event

@@ -12,6 +12,7 @@ from scripts.docgen.prompts.templates import render_template
 
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
+    from scripts.docgen.providers.base import LLMResponse
 
 _SYSTEM_PROMPT = (
     "You are a senior software architect. Generate clear, accurate documentation "
@@ -44,7 +45,7 @@ class ArchitectureGenerator(DocGenerator):
             or any(str(f.path.relative_to(snapshot.root)).startswith(p) for p in relevant_prefixes)
         ]
 
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
         context = build_context_for_prompt(snapshot, self.relevant_paths(snapshot))
         existing = self.existing_content()
 
@@ -57,4 +58,4 @@ class ArchitectureGenerator(DocGenerator):
         )
 
         response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
-        return sanitize_llm_output(response.content)
+        return sanitize_llm_output(response.content), response

@@ -12,6 +12,7 @@ from scripts.docgen.prompts.templates import render_template
 
 if TYPE_CHECKING:
     from scripts.docgen.analyzer.codebase import CodebaseSnapshot
+    from scripts.docgen.providers.base import LLMResponse
 
 _SYSTEM_PROMPT = (
     "You are a senior software engineer. Generate clear coding standards documentation "
@@ -47,7 +48,7 @@ class StandardsGenerator(DocGenerator):
             if f.path.name in _CONFIG_FILES
         ]
 
-    def generate(self, snapshot: CodebaseSnapshot) -> str:
+    def generate(self, snapshot: CodebaseSnapshot) -> tuple[str, LLMResponse | None]:
         config_parts: list[str] = []
         for path in self.relevant_paths(snapshot):
             content = read_file_content(path)
@@ -65,4 +66,4 @@ class StandardsGenerator(DocGenerator):
         )
 
         response = self.provider.generate(prompt, system_prompt=_SYSTEM_PROMPT)
-        return sanitize_llm_output(response.content)
+        return sanitize_llm_output(response.content), response

@@ -30,7 +30,7 @@ Ao aplicar este projeto, seu repositorio passa a ter:
 | **Quality gates** | Lint (ruff), tipos (mypy), testes (pytest) em todo PR |
 | **Docs freshness** | CI falha se codigo publico mudou sem documentacao |
 | **Auto-aprovacao** | PRs de baixo risco aprovados automaticamente |
-| **Portal Docusaurus** | Publicado em GitHub Pages a cada merge na main |
+| **Portal Docusaurus** | Publicado em GitHub Pages a cada merge no master |
 | **API Reference** | Gerada automaticamente a partir do schema OpenAPI |
 | **Versionamento** | Docs congelados em cada release (git tag) |
 | **Busca local** | Ctrl+K para busca offline (sem Algolia) |
@@ -105,7 +105,7 @@ O script lista todos os placeholders pendentes. Veja [Substituindo placeholders]
 make test
 ```
 
-Todos os 73 testes devem passar sem nenhuma alteracao.
+Todos os 184 testes devem passar sem nenhuma alteracao.
 
 ### Passo 6 — Veja o portal localmente
 
@@ -117,14 +117,13 @@ Acesse `http://localhost:3000`. O portal ja vem com:
 - Homepage com hero section
 - 5 secoes de documentacao (Architecture, Standards, Runbooks, ADR, API)
 - Busca local (Ctrl+K)
-- Dark mode automatico
-- Announcement bar com aviso de placeholders
+- Dark mode automatico (respeitaPrefersColorScheme)
 
 ### Passo 7 — Publique no GitHub
 
 ```bash title="Push para o GitHub"
 git remote set-url origin https://github.com/SEU-ORG/SEU-REPO.git
-git push -u origin main
+git push -u origin master
 ```
 
 Depois configure o GitHub conforme [Configuracao do GitHub](#configuracao-do-github).
@@ -212,10 +211,10 @@ Se `make docs` falhar no export OpenAPI, e normal — significa que voce ainda p
 
 Apos ter os arquivos no repositorio, configure o GitHub.
 
-### 1. Branch protection na main
+### 1. Branch protection no master
 
 ```
-Settings > Branches > Add branch ruleset > main
+Settings > Branches > Add branch ruleset > master
   [x] Require status checks to pass before merging
       - quality-gates
       - docs-gates
@@ -487,6 +486,7 @@ PROTECTED_PATTERNS = [
 ```python title="Limites de tamanho"
 MAX_CHANGED_FILES = 30   # maximo de arquivos alterados
 MAX_TOTAL_DELTA = 800    # maximo de linhas (add + del)
+MAX_NET_CHANGE = 400     # net change = |add - del|; detecta rewrites mascarados como refactors
 ```
 
 ### Ajustar guardrails de docs
@@ -589,7 +589,11 @@ O plugin `@docusaurus/plugin-ideal-image` depende de `sharp` (C++ nativo). Se na
 Significa que voce alterou codigo publico (`src/`, `app/`, `api/`) sem documentar. Opcoes:
 1. Adicione/atualize um doc em `docs-site/docs/`
 2. Atualize o README.md ou CHANGELOG.md
-3. Se a mudanca realmente nao precisa de docs, ajuste `PUBLIC_CHANGE_PREFIXES` em `docs_guardrails.py`
+3. Execute `make docs-gen` para gerar documentacao automaticamente via LLM
+4. Se a mudanca realmente nao precisa de docs, ajuste `PUBLIC_CHANGE_PREFIXES` em `docs_guardrails.py`
+
+A mensagem de erro agora inclui a secao de docs recomendada para cada area de codigo tocada
+(via `AREA_DOC_MAP` em `docs_guardrails.py`).
 
 ### Portal nao aparece no GitHub Pages
 
@@ -608,8 +612,11 @@ Significa que voce alterou codigo publico (`src/`, `app/`, `api/`) sem documenta
 | `make lint-fix` | Ruff com auto-fix | Para corrigir erros simples |
 | `make typecheck` | Mypy no Python | Para checar tipos |
 | `make test` | Pytest com verbose | Antes de commitar |
+| `make coverage` | Pytest + relatorio de cobertura (gate 80%) | Para verificar cobertura de testes |
 | `make docs` | OpenAPI + gen-api + build | Para testar build completo |
 | `make docs-dev` | Dev server (hot reload) | Para editar docs visualmente |
+| `make docs-gen` | Gera docs via LLM (salva em docs-site/docs/) | Apos adicionar features novas |
+| `make docs-gen-preview` | Preview de docs LLM sem escrever | Para ver o que seria gerado |
 | `make docs-typecheck` | TypeScript check | Se editar codigo TS |
 | `make validate` | Checa placeholders | Antes do primeiro deploy |
 | `make all` | lint + types + test + docs | CI completo local |

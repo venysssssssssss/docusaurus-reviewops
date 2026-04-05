@@ -6,12 +6,50 @@
 make setup    # Python venv + pnpm install
 ```
 
+Isso instala:
+- `poetry install --with dev` — Python deps incluindo ruff, mypy, pytest, pytest-cov
+- `pnpm --dir docs-site install` — deps Node do portal Docusaurus
+
+### Variaveis de ambiente
+
+```bash
+cp .env.example .env
+# Edite .env com chaves de API se quiser usar make docs-gen com providers na nuvem
+```
+
+Sem configuracao extra, o sistema funciona com Ollama local (gratuito).
+
+### Hooks de pre-commit (recomendado)
+
+```bash
+poetry run pre-commit install
+```
+
+Os hooks rodam automaticamente em `git commit`:
+- `ruff` — lint + format
+- `detect-private-key` — previne commit acidental de secrets
+- `no-commit-to-branch` — protege o branch `master` de commits diretos
+- `mypy` — type checking
+
 ## Development
 
 ```bash
 make docs-dev   # Sobe servidor local em localhost:3000
-make test       # Roda lint + testes
-make all        # lint + typecheck + test + build
+make test       # pytest (184 testes)
+make coverage   # pytest + cobertura >= 80% (falha se abaixo)
+make lint       # ruff check .
+make typecheck  # mypy src .github/scripts scripts
+make all        # lint + typecheck + test + docs build
+```
+
+### Geracao de docs via LLM
+
+```bash
+make docs-gen-preview   # Preview sem escrever nada
+make docs-gen           # Gera e salva (default: Ollama local)
+
+# Com provider especifico
+DOCGEN_PROVIDER=anthropic make docs-gen
 ```
 
 ## Writing Documentation
@@ -104,18 +142,24 @@ Each directory under `docs/` must have a `_category_.json`:
 
 ## Pull Requests
 
-- One topic per PR
-- Include docs if behavior changed (enforced by CI)
-- Title format: `type(scope): description` (Conventional Commits)
-- PRs < 30 files and < 800 lines are auto-approvable
+- Use o template em `.github/PULL_REQUEST_TEMPLATE.md` — preencha todos os campos
+- Um assunto por PR
+- Inclua docs se o comportamento mudou (enforced pelo CI — `docs_guardrails.py`)
+- Titulo: `tipo(escopo): descricao` (Conventional Commits)
+- Limites para auto-aprovacao: < 30 arquivos, < 800 linhas delta total, < 400 net change
+- PRs que tocam `.github/`, `infra/`, lockfiles ou configs do portal requerem revisao humana
 
 ## Tests
 
 ```bash
-make test   # runs pytest
+make test       # 184 testes
+make coverage   # com gate de 80% de cobertura
 ```
 
 Add tests for new theme overrides or config changes in `tests/test_docs_site_overrides.py`.
+
+Para novos scripts Python, adicione testes em `tests/` seguindo o padrao de importacao dinamica
+usado nos testes existentes (`importlib.util.spec_from_file_location`).
 
 ## Swizzling Theme Components
 

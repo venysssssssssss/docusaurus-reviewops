@@ -3,6 +3,48 @@
 Todas as mudancas relevantes deste projeto serao documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/).
 
+## [0.4.0] - 2026-04-04
+
+### Adicionado
+
+- `LICENSE` (MIT) — licenca formal do projeto
+- `SECURITY.md` — politica de seguranca, modelo de privilegios, instrucoes de reporte via GitHub Security Advisory
+- `.github/dependabot.yml` — atualizacao automatica semanal de deps: pip, npm e github-actions;
+  comentario de design explicando por que PRs do Dependabot exigem revisao humana (caminhos protegidos)
+- `.env.example` — referencia completa de variaveis de ambiente (API keys, provider docgen, FastAPI module)
+- `.github/PULL_REQUEST_TEMPLATE.md` — checklist obrigatorio de qualidade, docs, seguranca e convencoes
+- `.github/ISSUE_TEMPLATE/bug_report.yml` — formulario estruturado (componente, logs, ambiente)
+- `.github/ISSUE_TEMPLATE/feature_request.yml` — formulario com motivacao e alternativas
+- `.github/ISSUE_TEMPLATE/config.yml` — desabilita issues em branco; redireciona para Advisory e Discussions
+- `pytest-cov ^6.0` como dependencia de desenvolvimento
+- `make coverage` — target que roda pytest com relatorio de cobertura e gate de 80%
+- `[tool.coverage.*]` em `pyproject.toml` — configuracao de cobertura com `fail_under=80`, `branch=True`
+- Etapa de cobertura no CI (`pr-ci.yml`): `--cov-fail-under=80`, job summary em markdown, artifact `coverage-report.xml`
+- Badges no README: CI, Docs Deploy, Python 3.12, MIT
+- README trilingual completo (PT / EN / ES) — passo a passo completo de instalacao, configuracao e uso
+- `.pre-commit-config.yaml` — hooks: `ruff`, `ruff-format`, `check-yaml`, `detect-private-key`,
+  `no-commit-to-branch (master)`, `mypy`
+- `MAX_NET_CHANGE = 400` em `approval_policy.py` — detecta rewrites mascarados como refactors neutros
+  (ex: 500 add + 300 del = 800 delta mas 200 net, que passa; 500 add + 50 del = 550 delta mas 450 net, que reprovaria)
+- `AREA_DOC_MAP` em `docs_guardrails.py` — mapeamento semantico area-de-codigo -> secao-de-docs;
+  mensagem de erro agora sugere a secao correta em vez de apenas falhar
+- 2 novos testes para deteccao de net-zero: `test_large_net_change_rejected` e
+  `test_balanced_refactor_passes_net_check` (184 testes no total)
+
+### Melhorado
+
+- `docs-site/docs/architecture/overview.md` — reescrita completa com sistema real:
+  diagramas mermaid de fluxo de seguranca, componentes docgen, estrutura de diretorios
+- `docs-site/docs/standards/coding-standards.md` — baseada no `pyproject.toml` real:
+  regras ruff ativas, config mypy, gate de cobertura, convencoes de dataclass e NoReturn
+- `docs-site/docs/runbooks/deploy.md` — setup inicial GitHub Pages passo a passo,
+  URL real do portal, tabela de troubleshooting expandida
+
+### Corrigido
+
+- `.gitignore` — adicionada excecao `!.env.example` para que o arquivo de exemplo seja rastreado pelo git
+  (era capturado pelo padrao `.env.*`)
+
 ## [0.3.0] - 2026-04-04
 
 ### Adicionado
